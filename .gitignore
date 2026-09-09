@@ -35,3 +35,11 @@ nextcloud/*
 !nextcloud/docker-compose.yml
 !nextcloud/.env.example
 !nextcloud/*.md
+
+!appflowy/
+appflowy/*
+!appflowy/docker-compose.yml
+!appflowy/docker-compose.override.yml
+!appflowy/nginx/
+!appflowy/env.*.example
+!appflowy/*.md
