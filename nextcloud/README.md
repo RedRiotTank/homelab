@@ -25,13 +25,12 @@ Ensure you set a strong `POSTGRES_PASSWORD`. The other variables (like the port 
 
 If you are using a logging stack like Promtail/Loki, create a `docker-compose.override.yml` file to inject your monitoring network and labels without polluting the main Git repository:
 
-YAML
-
-```
+```yaml
 version: '3.8'
 services:
   nextcloud-db:
     networks:
+      - default
       - monitoring
     labels:
       logging_jobname: "nextcloud-logs"
@@ -39,6 +38,7 @@ services:
 
   nextcloud:
     networks:
+      - default
       - monitoring
     labels:
       logging_jobname: "nextcloud-logs"
