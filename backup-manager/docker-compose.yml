@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  backup-manager:
+    container_name: backup-manager
+    build:
+      context: .
+      args:
+        TZ: ${TIMEZONE:-Europe/Madrid}
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - DOCKER_API_VERSION=1.41
+      - TZ=${TIMEZONE:-Europe/Madrid}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${NEXTCLOUD_HOST_DATA:-/srv/nextcloud_data}:${NEXTCLOUD_DATA_DIR:-/srv/nextcloud_data}
+      - ${RCLONE_HOST_CONFIG:-~/.config/rclone}:/root/.config/rclone
+      - restic_cache:/root/.cache/restic
+
+volumes:
+  restic_cache:
