@@ -29,3 +29,9 @@ backup-manager/*
 !backup-manager/*.md
 !backup-manager/*.sh
 !backup-manager/.env.example
+
+!nextcloud/
+nextcloud/*
+!nextcloud/docker-compose.yml
+!nextcloud/.env.example
+!nextcloud/*.md

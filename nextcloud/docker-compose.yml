@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  nextcloud-db:
+    container_name: nextcloud-db
+    image: postgres:15-alpine
+    restart: unless-stopped
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-nextcloud}
+      - POSTGRES_USER=${POSTGRES_USER:-nextcloud_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+  nextcloud-redis:
+    container_name: nextcloud-redis
+    image: redis:alpine
+    restart: unless-stopped
+
+  nextcloud:
+    container_name: nextcloud
+    image: nextcloud:latest
+    restart: unless-stopped
+    depends_on:
+      - nextcloud-db
+      - nextcloud-redis
+    volumes:
+      - ./app_config:/var/www/html
+      - ${NEXTCLOUD_DATA_PATH:-/srv/nextcloud_data}:/var/www/html/data
+    environment:
+      - POSTGRES_HOST=nextcloud-db
+      - POSTGRES_DB=${POSTGRES_DB:-nextcloud}
+      - POSTGRES_USER=${POSTGRES_USER:-nextcloud_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - '127.0.0.1:${NEXTCLOUD_PORT:-8282}:80'
