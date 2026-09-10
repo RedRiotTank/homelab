@@ -39,7 +39,13 @@ nextcloud/*
 !appflowy/
 appflowy/*
 !appflowy/docker-compose.yml
-!appflowy/docker-compose.override.yml
 !appflowy/nginx/
-!appflowy/env.*.example
 !appflowy/*.md
+
+# ---------------------------------------------------
+# homarr
+!homarr/
+homarr/*
+!homarr/docker-compose.yml
+!homarr/.env.example
+!homarr/README.md
