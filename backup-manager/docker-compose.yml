@@ -16,6 +16,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${NEXTCLOUD_HOST_DATA:-/srv/nextcloud_data}:${NEXTCLOUD_DATA_DIR:-/srv/nextcloud_data}
+      - ${HOMARR_HOST_DATA:-/opt/homarr/appdata}:${HOMARR_DATA_DIR:-/opt/homarr/appdata}
       - ${RCLONE_HOST_CONFIG:-~/.config/rclone}:/root/.config/rclone
       - restic_cache:/root/.cache/restic
 
