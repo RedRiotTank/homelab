@@ -75,6 +75,7 @@ Bash
 ```
 docker exec backup-manager /usr/local/bin/backup_appflowy.sh
 docker exec backup-manager /usr/local/bin/backup_nextcloud.sh
+docker exec backup-manager /usr/local/bin/backup_homarr.sh
 ```
 
 ### View Logs
@@ -94,3 +95,5 @@ If a service goes down or data is corrupted, do not panic. Refer to the specific
 -   [AppFlowy Disaster Recovery](APPFLOWY_DISASTER_RECOVERY.md)
     
 -   [Nextcloud Disaster Recovery](NEXTCLOUD_DISASTER_RECOVERY.md)
+
+- [Homarr Disaster Recovery](HOMARR_DISASTER_RECOVERY.md)

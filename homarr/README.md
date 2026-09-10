@@ -36,3 +36,10 @@ Bash
 ```
 docker compose up -d
 ```
+
+## Backups & Disaster Recovery
+
+This deployment is fully compatible with the centralized `backup-manager`.
+
+- **Backups:** Handled dynamically via cron jobs in the backup-manager container.
+- **Recovery:** If data corruption occurs, refer to the `HOMARR_DISASTER_RECOVERY.md` runbook located in the `/opt/backup-manager/` directory for automated restoration scripts.
