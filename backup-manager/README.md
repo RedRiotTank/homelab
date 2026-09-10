@@ -6,6 +6,7 @@ A fully containerized, agnostic, and automated backup solution for the homelab i
 
 - **Automated Cron Jobs:** Built-in scheduling for daily backups.
 - **Environment Driven:** Zero hardcoded paths, credentials, or container names. Fully portable.
+- **Opt-in Services:** Built-in feature toggles to easily enable or disable backups for specific services.
 - **Disaster Recovery Ready:** Includes step-by-step runbooks and automated restore scripts.
 - **Monitoring Integration:** Ready to plug into Prometheus/Promtail/Loki stacks without polluting the base configuration.
 
@@ -26,7 +27,7 @@ nano .env
 
 ```
 
-Ensure you define a strong RESTIC_PASSWORD and match the paths to your host system.
+Ensure you define a strong `RESTIC_PASSWORD` and match the paths to your host system. **Note:** Backups are disabled by default (Opt-in). You must explicitly set `ENABLE_BACKUP_<SERVICE>="true"` in your `.env` to activate the cron jobs for your active services.
 
 ### 2\. Configure Local Monitoring (Optional)
 
@@ -64,6 +65,22 @@ Bash
 docker compose up -d --build
 ```
 
+### 4\. Initialize Restic Repositories (First Time Only)
+
+Before taking your first backup on a fresh remote storage, you **must** initialize the Restic repositories. If you skip this, Restic will throw a `<config/> does not exist` error.
+
+Run the initialization for each active service using its respective repository path:
+
+Bash
+
+```
+docker exec backup-manager restic -r rclone:gdrive:backups/appflowy init
+docker exec backup-manager restic -r rclone:gdrive:backups/nextcloud init
+docker exec backup-manager restic -r rclone:gdrive:backups/homarr init
+```
+
+_(You will see a "created restic repository" success message)._
+
 ## Usage
 
 ### Trigger a Manual Backup
@@ -96,4 +113,4 @@ If a service goes down or data is corrupted, do not panic. Refer to the specific
     
 -   [Nextcloud Disaster Recovery](NEXTCLOUD_DISASTER_RECOVERY.md)
 
-- [Homarr Disaster Recovery](HOMARR_DISASTER_RECOVERY.md)
+- 	[Homarr Disaster Recovery](HOMARR_DISASTER_RECOVERY.md)
