@@ -1,15 +1,23 @@
-# 1. Ignore all by default
+# =========================================
+# 1. IGNORE ALL BY DEFAULT
+# =========================================
 *
 .*
 
-# 2. Allow .gitignore and Readme
+# =========================================
+# 2. GLOBAL ALLOWANCES (Root Level)
+# =========================================
 !.gitignore
 !README.md
+!.env.example
 
-# 3. Global exclusion rules
+# =========================================
+# 3. GLOBAL EXCLUSIONS (Safety Net)
+# =========================================
+# Garantiza que estos archivos nunca se suban,
+# incluso si se permite un directorio entero.
 .env
 .env.*
-!.env.example
 docker-compose.override.yml
 *.log
 *.sql
@@ -21,7 +29,11 @@ rclone.conf
 *.crt
 *.pem
 
-# 4. Gradually open services
+# =========================================
+# 4. ALLOW-LISTED SERVICES
+# =========================================
+
+# --- Backup Manager ---
 !backup-manager/
 backup-manager/*
 !backup-manager/Dockerfile
@@ -30,22 +42,31 @@ backup-manager/*
 !backup-manager/*.sh
 !backup-manager/.env.example
 
+# --- Nextcloud ---
 !nextcloud/
 nextcloud/*
 !nextcloud/docker-compose.yml
-!nextcloud/.env.example
 !nextcloud/*.md
+!nextcloud/.env.example
 
+# --- AppFlowy ---
 !appflowy/
 appflowy/*
 !appflowy/docker-compose.yml
 !appflowy/nginx/
 !appflowy/*.md
+!appflowy/.env.example
 
-# ---------------------------------------------------
-# homarr
+# --- Homarr ---
 !homarr/
 homarr/*
 !homarr/docker-compose.yml
+!homarr/*.md
 !homarr/.env.example
-!homarr/README.md
+
+# --- Jellyfin ---
+!jellyfin/
+jellyfin/*
+!jellyfin/docker-compose.yml
+!jellyfin/*.md
+!jellyfin/.env.example
