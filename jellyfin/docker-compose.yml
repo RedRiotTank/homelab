@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-Europe/Madrid}
+      - DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=1
+      - COMPlus_ThreadPool_ForceMinWorkerThreads=100
+    volumes:
+      - ${JELLYFIN_CONFIG_DIR:-/srv/appdata/jellyfin/config}:/config
+      - ${MEDIA_DIR:-/mnt/media}:/data:rslave
+    ports:
+      - "${JELLYFIN_PORT:-8096}:8096"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${JELLYFIN_MEMORY_LIMIT:-4096M}

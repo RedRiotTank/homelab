@@ -18,6 +18,8 @@ services:
       - ${NEXTCLOUD_HOST_DATA:-/srv/nextcloud_data}:${NEXTCLOUD_DATA_DIR:-/srv/nextcloud_data}
       - ${HOMARR_HOST_DATA:-/opt/homarr/appdata}:${HOMARR_DATA_DIR:-/opt/homarr/appdata}
       - ${RCLONE_HOST_CONFIG:-~/.config/rclone}:/root/.config/rclone
+      - ${JELLYFIN_HOST_CONFIG:-/srv/appdata/jellyfin/config}:${JELLYFIN_CONFIG_DIR:-/srv/appdata/jellyfin/config}
+      - ${JELLYFIN_HOST_MEDIA:-/mnt/media}:${JELLYFIN_MEDIA_DIR:-/mnt/media}:ro
       - restic_cache:/root/.cache/restic
 
 volumes:
