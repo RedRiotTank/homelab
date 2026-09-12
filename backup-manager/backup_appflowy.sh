@@ -7,8 +7,8 @@ exec 1>/proc/1/fd/1
 exec 2>/proc/1/fd/2
 
 # Dynamic discovery with environment override
-CONTAINER_DB="\({APPFLOWY_DB_CONTAINER:-\)(docker ps --filter "name=appflowy.*postgres" --format "{{.Names}}" | head -n 1)}"
-CONTAINER_MINIO="\({APPFLOWY_MINIO_CONTAINER:-\)(docker ps --filter "name=appflowy.*minio" --format "{{.Names}}" | head -n 1)}"
+CONTAINER_DB="${APPFLOWY_DB_CONTAINER:-$(docker ps --filter "name=appflowy.*postgres" --format "{{.Names}}" | head -n 1)}"
+CONTAINER_MINIO="${APPFLOWY_MINIO_CONTAINER:-$(docker ps --filter "name=appflowy.*minio" --format "{{.Names}}" | head -n 1)}"
 
 RESTIC_REPO="${APPFLOWY_RESTIC_REPO:-rclone:gdrive:backups/appflowy}"
 export RESTIC_PASSWORD="${RESTIC_PASSWORD:?Error: undefined RESTIC_PASSWORD}"
@@ -30,14 +30,14 @@ if [ -z "$CONTAINER_MINIO" ]; then
 fi
 
 echo "-> Exporting AppFlowy PostgreSQL database ($CONTAINER_DB)..."
-docker exec "\(CONTAINER_DB" pg_dumpall -U postgres > "\)DB_BACKUP_TEMP"
+docker exec "$CONTAINER_DB" pg_dumpall -U postgres > "$DB_BACKUP_TEMP"
 
 echo "-> Extracting MinIO storage data ($CONTAINER_MINIO)..."
-rm -rf "\(MINIO_DUMP_DIR" && mkdir -p "\)MINIO_DUMP_DIR"
-docker cp "\(CONTAINER_MINIO":/data/. "\)MINIO_DUMP_DIR/"
+rm -rf "$MINIO_DUMP_DIR" && mkdir -p "$MINIO_DUMP_DIR"
+docker cp "$CONTAINER_MINIO":/data/. "$MINIO_DUMP_DIR/"
 
 echo "-> Uploading AppFlowy snapshot to Restic repository..."
-restic -r "\(RESTIC_REPO" backup "\)DB_BACKUP_TEMP" "$MINIO_DUMP_DIR"
+restic -r "$RESTIC_REPO" backup "$DB_BACKUP_TEMP" "$MINIO_DUMP_DIR"
 
 echo "-> Cleaning temporary files..."
 rm -f "$DB_BACKUP_TEMP"

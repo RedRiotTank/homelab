@@ -24,10 +24,10 @@ echo "-> Enabling maintenance mode in Nextcloud..."
 docker exec -u www-data "$CONTAINER_NC" php occ maintenance:mode --on
 
 echo "-> Exporting PostgreSQL database..."
-docker exec -u postgres "\(CONTAINER_DB" pg_dump -U "\)DB_USER" "\(DB_NAME" > "\)DB_BACKUP_TEMP"
+docker exec -u postgres "$CONTAINER_DB" pg_dump -U "$DB_USER" "$DB_NAME" > "$DB_BACKUP_TEMP"
 
 echo "-> Uploading encrypted data via Restic..."
-restic -r "\(RESTIC_REPO" backup "\)DATA_DIR" "$DB_BACKUP_TEMP"
+restic -r "$RESTIC_REPO" backup "$DATA_DIR" "$DB_BACKUP_TEMP"
 
 echo "-> Disabling maintenance mode..."
 docker exec -u www-data "$CONTAINER_NC" php occ maintenance:mode --off

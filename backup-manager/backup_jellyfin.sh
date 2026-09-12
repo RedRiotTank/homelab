@@ -47,7 +47,7 @@ echo "-> Stopping Jellyfin container to lock SQLite databases..."
 docker stop "$CONTAINER"
 
 echo "-> Uploading Jellyfin snapshot via Restic..."
-restic -r "\(RESTIC_REPO" backup "\){EXCLUDE_PARAMS[@]}" "${BACKUP_PATHS[@]}"
+restic -r "$RESTIC_REPO" backup "${EXCLUDE_PARAMS[@]}" "${BACKUP_PATHS[@]}"
 
 echo "-> Restarting Jellyfin container..."
 docker start "$CONTAINER"

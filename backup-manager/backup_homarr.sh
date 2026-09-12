@@ -17,7 +17,7 @@ echo "-> Stopping Homarr container to ensure SQLite consistency..."
 docker stop "$CONTAINER"
 
 echo "-> Uploading encrypted data via Restic..."
-restic -r "\(RESTIC_REPO" backup "\)DATA_DIR"
+restic -r "$RESTIC_REPO" backup "$DATA_DIR"
 
 echo "-> Starting Homarr container..."
 docker start "$CONTAINER"
