@@ -20,6 +20,7 @@ services:
       - ${RCLONE_HOST_CONFIG:-~/.config/rclone}:/root/.config/rclone
       - ${JELLYFIN_HOST_CONFIG:-/srv/appdata/jellyfin/config}:${JELLYFIN_CONFIG_DIR:-/srv/appdata/jellyfin/config}
       - ${JELLYFIN_HOST_MEDIA:-/mnt/media}:${JELLYFIN_MEDIA_DIR:-/mnt/media}:ro
+      - ${ROMM_HOST_DATA:-/opt/romm}:${ROMM_DATA_DIR:-/opt/romm}
       - restic_cache:/root/.cache/restic
 
 volumes:
