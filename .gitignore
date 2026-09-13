@@ -70,3 +70,10 @@ jellyfin/*
 !jellyfin/docker-compose.yml
 !jellyfin/*.md
 !jellyfin/.env.example
+
+# --- RomM (Retro) ---
+!romm/
+romm/*
+!romm/docker-compose.yml
+!romm/*.md
+!romm/.env.example
