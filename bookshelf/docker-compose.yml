@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web:latest
+    container_name: calibre-web
+    environment:
+      - PUID=${PUID:-1001}
+      - PGID=${PGID:-1001}
+      - TZ=${TIMEZONE:-Europe/Madrid}
+      - DOCKER_MODS=linuxserver/mods:universal-calibre
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=1
+    volumes:
+      - ./config/calibre-web:/config
+      - ${BOOKS_HOST_DIR:-/srv/media/books}:/books
+    ports:
+      - ${CALIBRE_WEB_PORT:-8083}:8083
+    restart: unless-stopped
+    networks:
+      - monitoring_net
+
+  lazylibrarian:
+    image: lscr.io/linuxserver/lazylibrarian:latest
+    container_name: lazylibrarian
+    environment:
+      - PUID=${PUID:-1001}
+      - PGID=${PGID:-1001}
+      - TZ=${TIMEZONE:-Europe/Madrid}
+    volumes:
+      - ./config/lazylibrarian:/config
+      - ${BOOKS_HOST_DIR:-/srv/media/books}:/books
+      - ./data/downloads:/downloads
+    ports:
+      - ${LAZYLIBRARIAN_PORT:-5299}:5299
+    restart: unless-stopped
+    networks:
+      - monitoring_net
+
+networks:
+  monitoring_net:
+    external:
+      name: monitoring

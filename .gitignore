@@ -88,3 +88,10 @@ romm/*
 !romm/docker-compose.yml
 !romm/*.md
 !romm/.env.example
+
+# --- Bookshelf ---
+!bookshelf/
+bookshelf/*
+!bookshelf/docker-compose.yml
+!bookshelf/*.md
+!bookshelf/.env.example
