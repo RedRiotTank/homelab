@@ -33,6 +33,17 @@ rclone.conf
 # 4. ALLOW-LISTED SERVICES
 # =========================================
 
+# --- Monitoring Stack ---
+!monitoring-stack-gpnc/
+monitoring-stack-gpnc/*
+!monitoring-stack-gpnc/docker-compose.yml
+!monitoring-stack-gpnc/*.md
+!monitoring-stack-gpnc/.env.example
+!monitoring-stack-gpnc/LICENSE
+!monitoring-stack-gpnc/Makefile
+!monitoring-stack-gpnc/configs/**
+!monitoring-stack-gpnc/dashboards/**
+
 # --- Backup Manager ---
 !backup-manager/
 backup-manager/*
