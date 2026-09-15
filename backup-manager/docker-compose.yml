@@ -3,6 +3,7 @@ version: '3.8'
 services:
   backup-manager:
     container_name: backup-manager
+    hostname: ${BACKUP_HOSTNAME:-Server}
     build:
       context: .
       args:
@@ -21,6 +22,8 @@ services:
       - ${JELLYFIN_HOST_CONFIG:-/srv/appdata/jellyfin/config}:${JELLYFIN_CONFIG_DIR:-/srv/appdata/jellyfin/config}
       - ${JELLYFIN_HOST_MEDIA:-/mnt/media}:${JELLYFIN_MEDIA_DIR:-/mnt/media}:ro
       - ${ROMM_HOST_DATA:-/opt/romm}:${ROMM_DATA_DIR:-/opt/romm}
+      - ${BOOKSHELF_HOST_DATA:-/opt/bookshelf}:${BOOKSHELF_DATA_DIR:-/opt/bookshelf}
+      - ${BOOKSHELF_HOST_BOOKS:-/srv/media/books}:${BOOKSHELF_BOOKS_DIR:-/srv/media/books}:ro
       - restic_cache:/root/.cache/restic
 
 volumes:

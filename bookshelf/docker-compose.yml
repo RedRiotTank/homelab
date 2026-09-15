@@ -29,7 +29,7 @@ services:
     volumes:
       - ./config/lazylibrarian:/config
       - ${BOOKS_HOST_DIR:-/srv/media/books}:/books
-      - ./data/downloads:/downloads
+      - ${DOWNLOADS_HOST_DIR:-./data/downloads}:/downloads
     ports:
       - ${LAZYLIBRARIAN_PORT:-5299}:5299
     restart: unless-stopped

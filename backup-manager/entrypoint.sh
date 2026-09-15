@@ -22,6 +22,10 @@ if [ "${ENABLE_BACKUP_ROMM:-false}" = "true" ]; then
   echo "${BACKUP_CRON_ROMM:-30 5 * * 1} /usr/local/bin/backup_romm.sh" >> /etc/cron.d/backup-cron
 fi
 
+if [ "${ENABLE_BACKUP_BOOKSHELF:-false}" = "true" ]; then
+  echo "${BACKUP_CRON_BOOKSHELF:-0 5 * * 1} /usr/local/bin/backup_bookshelf.sh" >> /etc/cron.d/backup-cron
+fi
+
 chmod 0644 /etc/cron.d/backup-cron
 crontab /etc/cron.d/backup-cron
 exec cron -f

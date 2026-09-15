@@ -21,6 +21,7 @@ COPY backup_appflowy.sh /usr/local/bin/backup_appflowy.sh
 COPY backup_homarr.sh /usr/local/bin/backup_homarr.sh
 COPY backup_jellyfin.sh /usr/local/bin/backup_jellyfin.sh
 COPY backup_romm.sh /usr/local/bin/backup_romm.sh
+COPY backup_bookshelf.sh /usr/local/bin/backup_bookshelf.sh
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /usr/local/bin/backup_nextcloud.sh \
@@ -28,6 +29,7 @@ RUN chmod +x /usr/local/bin/backup_nextcloud.sh \
              /usr/local/bin/backup_homarr.sh \
              /usr/local/bin/backup_jellyfin.sh \
              /usr/local/bin/backup_romm.sh \
+             /usr/local/bin/backup_bookshelf.sh \
              /entrypoint.sh
 
 CMD ["/entrypoint.sh"]
