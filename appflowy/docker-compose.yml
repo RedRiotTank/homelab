@@ -16,7 +16,7 @@ services:
 
   minio:
     restart: on-failure
-    image: minio/minio
+    image: quay.io/minio/minio:latest
     environment:
       - MINIO_BROWSER_REDIRECT_URL=${APPFLOWY_BASE_URL?:err}/minio
       - MINIO_ROOT_USER=${APPFLOWY_S3_ACCESS_KEY:-minioadmin}
