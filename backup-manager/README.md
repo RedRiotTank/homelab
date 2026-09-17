@@ -81,6 +81,7 @@ Run the initialization for each active service using its respective repository p
     docker exec backup-manager restic -r rclone:gdrive:backups/jellyfin init
     docker exec backup-manager restic -r rclone:gdrive:backups/romm init
     docker exec backup-manager restic -r rclone:gdrive:backups/bookshelf init
+    docker exec backup-manager restic -r rclone:gdrive:backups/arr init
   ```  
 
 _(You will see a "created restic repository" success message)._
@@ -99,6 +100,7 @@ You can manually trigger any backup script directly inside the running container
     docker exec backup-manager /usr/local/bin/backup_jellyfin.sh
     docker exec backup-manager /usr/local/bin/backup_romm.sh
     docker exec backup-manager /usr/local/bin/backup_bookshelf.sh
+    docker exec backup-manager /usr/local/bin/backup_arr.sh
 ```    
 
 ### View Logs
@@ -120,3 +122,4 @@ If a service goes down or data is corrupted, do not panic. Refer to the specific
 - [Jellyfin Disaster Recovery](JELLYFIN_DISASTER_RECOVERY.md)
 - [Nextcloud Disaster Recovery](NEXTCLOUD_DISASTER_RECOVERY.md)
 - [RomM Disaster Recovery](ROMM_DISASTER_RECOVERY.md)
+- [Arr Stack Disaster Recovery](ARR_DISASTER_RECOVERY.md)
