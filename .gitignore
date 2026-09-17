@@ -95,3 +95,12 @@ bookshelf/*
 !bookshelf/docker-compose.yml
 !bookshelf/*.md
 !bookshelf/.env.example
+
+# --- Arr Stack ---
+!arr-stack/
+arr-stack/*
+!arr-stack/docker-compose.yml
+!arr-stack/*.md
+!arr-stack/.env.example
+!arr-stack/*.sh
+!arr-stack/kitsunarr_src/**

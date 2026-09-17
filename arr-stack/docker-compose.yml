@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=${PUID:-1001}
+      - PGID=${PGID:-1001}
+      - TZ=${TZ:-Europe/Madrid}
+      - WEBUI_PORT=${QBITTORRENT_WEBUI_PORT:-8080}
+      - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT:-6881}
+    volumes:
+      - ${QBIT_CONFIG_DIR:-./qbit-config}:/config
+      - ${DATA_ROOT_DIR:-/srv}:/data
+    ports:
+      - ${QBITTORRENT_WEBUI_PORT:-8080}:8080
+      - ${QBITTORRENT_TORRENTING_PORT:-6881}:6881
+      - ${QBITTORRENT_TORRENTING_PORT:-6881}:6881/udp
+    restart: unless-stopped
+    networks:
+      - arr_net
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=${PUID:-1001}
+      - PGID=${PGID:-1001}
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - ${SONARR_CONFIG_DIR:-./sonarr/config}:/config
+      - ${DATA_ROOT_DIR:-/srv}:/data
+      - ${MEDIA_CLOUD_DIR:-/mnt/media}:/data-cloud:ro,rslave
+    ports:
+      - ${SONARR_PORT:-8989}:8989
+    restart: unless-stopped
+    networks:
+      - arr_net
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${PUID:-1001}
+      - PGID=${PGID:-1001}
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - ${PROWLARR_CONFIG_DIR:-./prowlarr/config}:/config
+    ports:
+      - ${PROWLARR_PORT:-9696}:9696
+    restart: unless-stopped
+    networks:
+      - arr_net
+
+  kitsunarr:
+    build: ./kitsunarr_src
+    container_name: kitsunarr
+    profiles:
+      - kitsunarr_enabled
+    environment:
+      - TZ=${TZ:-Europe/Madrid}
+    ports:
+      - "${KITSUNARR_PORT:-4080}:4080"
+    volumes:
+      - ${KITSUNARR_DATA_DIR:-./kitsunarr-data}:/app/data
+      - ${KITSUNARR_SECRETS_DIR:-./kitsunarr-secrets}:/app/secrets
+    restart: unless-stopped
+    networks:
+      - arr_net
+
+networks:
+  arr_net:
+    name: arr_net
