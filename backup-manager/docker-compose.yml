@@ -24,6 +24,7 @@ services:
       - ${ROMM_HOST_DATA:-/opt/romm}:${ROMM_DATA_DIR:-/opt/romm}
       - ${BOOKSHELF_HOST_DATA:-/opt/bookshelf}:${BOOKSHELF_DATA_DIR:-/opt/bookshelf}
       - ${BOOKSHELF_HOST_BOOKS:-/srv/media/books}:${BOOKSHELF_BOOKS_DIR:-/srv/media/books}:ro
+      - ${ARR_HOST_DATA:-/opt/arr-stack}:${ARR_DATA_DIR:-/opt/arr-stack}
       - restic_cache:/root/.cache/restic
 
 volumes:

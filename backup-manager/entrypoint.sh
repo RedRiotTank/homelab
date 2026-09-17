@@ -26,6 +26,10 @@ if [ "${ENABLE_BACKUP_BOOKSHELF:-false}" = "true" ]; then
   echo "${BACKUP_CRON_BOOKSHELF:-0 5 * * 1} /usr/local/bin/backup_bookshelf.sh" >> /etc/cron.d/backup-cron
 fi
 
+if [ "${ENABLE_BACKUP_ARR:-false}" = "true" ]; then
+  echo "${BACKUP_CRON_ARR:-0 4 * * 2} /usr/local/bin/backup_arr.sh" >> /etc/cron.d/backup-cron
+fi
+
 chmod 0644 /etc/cron.d/backup-cron
 crontab /etc/cron.d/backup-cron
 exec cron -f
