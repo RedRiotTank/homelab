@@ -38,7 +38,7 @@ services:
     depends_on:
       - prometheus
     ports:
-      - 3000:3000
+      - "${GRAFANA_PORT:-3000}:3000"
     cpus: ${MONITORING_CPUS:-0.5}
     mem_limit: ${MONITORING_MEM_LIMIT:-512m}
     networks:
@@ -67,7 +67,7 @@ services:
     depends_on:
       - alertmanager
     ports:
-      - 9090:9090
+      - "${PROMETHEUS_PORT:-9090}:9090"
     cpus: ${MONITORING_CPUS:-0.5}
     mem_limit: ${MONITORING_MEM_LIMIT:-512m}
     networks:
@@ -128,7 +128,7 @@ services:
     volumes:
       - ./configs/alertmanager/alertmanager-fallback-config.yml:/etc/alertmanager/config.yml
     ports:
-      - 9093:9093
+      - "${ALERTMANAGER_PORT:-9093}:9093"
     cpus: ${MONITORING_CPUS:-0.5}
     mem_limit: ${MONITORING_MEM_LIMIT:-512m}
     networks:
@@ -144,7 +144,7 @@ services:
     container_name: uncomplicated-alert-receiver
     restart: unless-stopped
     ports:
-      - 9094:8080
+      - "${ALERT_RECEIVER_PORT:-9094}:8080"
     cpus: ${MONITORING_CPUS:-0.5}
     mem_limit: ${MONITORING_MEM_LIMIT:-512m}
     networks:
@@ -158,7 +158,7 @@ services:
     container_name: redis
     restart: unless-stopped
     ports:
-      - 6379:6379
+      - "${REDIS_PORT:-6379}:6379"
     cpus: ${MONITORING_CPUS:-0.5}
     mem_limit: ${MONITORING_MEM_LIMIT:-512m}
     networks:
@@ -173,7 +173,7 @@ services:
     container_name: loki
     user: root
     ports:
-      - 3100:3100
+      - "${LOKI_PORT:-3100}:3100"
     command: -config.file=/etc/loki/loki.yaml
     volumes:
       - ./configs/loki/loki.yaml:/etc/loki/loki.yaml
