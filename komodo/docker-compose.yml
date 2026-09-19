@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  komodo:
+    image: ghcr.io/mbecker20/komodo:${KOMODO_VERSION:-latest}
+    container_name: komodo
+    hostname: komodo
+    restart: unless-stopped
+    environment:
+      - KOMODO_DATABASE_URI=mongodb://komodo-mongo:27017/komodo
+      - KOMODO_LOCAL_AUTH=true
+      - KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET}
+      - KOMODO_PASSKEY=${KOMODO_PASSKEY}
+      - KOMODO_FIRST_SERVER=${KOMODO_FIRST_SERVER}
+    volumes:
+      - komodo_data:/config
+    networks:
+      - komodo_internal
+
+  komodo-periphery:
+    image: ghcr.io/mbecker20/periphery:${KOMODO_VERSION:-latest}
+    container_name: komodo-periphery
+    restart: unless-stopped
+    environment:
+      - PERIPHERY_PASSKEYS=${KOMODO_PASSKEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - komodo_internal
+
+  komodo-mongo:
+    image: mongo:${MONGO_VERSION:-6.0}
+    container_name: komodo-mongo
+    restart: unless-stopped
+    volumes:
+      - komodo_mongo_data:/data/db
+    networks:
+      - komodo_internal
+
+volumes:
+  komodo_data:
+    name: komodo_data
+  komodo_mongo_data:
+    name: komodo_mongo_data
+
+networks:
+  komodo_internal:
+    name: komodo_internal
