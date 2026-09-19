@@ -130,7 +130,8 @@ Recovery scripts and guides are decoupled from the central engine to ensure atom
 - [Jellyfin Disaster Recovery](disaster-recovery/JELLYFIN_DISASTER_RECOVERY.md)
 - [Nextcloud Disaster Recovery](disaster-recovery/NEXTCLOUD_DISASTER_RECOVERY.md)
 - [RomM Disaster Recovery](disaster-recovery/ROMM_DISASTER_RECOVERY.md)
-
+- [AdGuard Home Disaster Recovery](disaster-recovery/ADGUARD_DISASTER_RECOVERY.md)
+- [Proxy Stack Disaster Recovery](disaster-recovery/PROXY_STACK_DISASTER_RECOVERY.md)
 To run a recovery procedure:
 
 ```Bash

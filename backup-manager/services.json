@@ -78,5 +78,26 @@
     "cron": "0 4 * * 2",
     "repo": "rclone:gdrive:backups/arr",
     "volumes": ["/opt/arr-stack"]
-  }
+  },
+  "proxy-stack": {
+      "enabled": true,
+      "cron": "0 3 * * 3",
+      "repo": "rclone:gdrive:backups/proxy-stack",
+      "volumes": [
+        "/opt/proxy-stack/data",
+        "/opt/proxy-stack/letsencrypt"
+      ],
+      "exclude": [
+        "logs",
+        "*.log"
+      ]
+    },
+    "adguard": {
+      "enabled": true,
+      "cron": "30 3 * * 3",
+      "repo": "rclone:gdrive:backups/adguard",
+      "volumes": [
+        "/opt/adguard/conf"
+      ]
+    }
 }

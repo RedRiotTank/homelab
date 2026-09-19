@@ -25,6 +25,8 @@ services:
       - ${BOOKSHELF_HOST_DATA:-/opt/bookshelf}:${BOOKSHELF_DATA_DIR:-/opt/bookshelf}
       - ${BOOKSHELF_HOST_BOOKS:-/srv/media/books}:${BOOKSHELF_BOOKS_DIR:-/srv/media/books}:ro
       - ${ARR_HOST_DATA:-/opt/arr-stack}:${ARR_DATA_DIR:-/opt/arr-stack}
+      - ${PROXY_HOST_DATA:-/opt/proxy-stack}:${PROXY_DATA_DIR:-/opt/proxy-stack}:ro
+      - ${ADGUARD_HOST_DATA:-/opt/adguard}:${ADGUARD_DATA_DIR:-/opt/adguard}:ro
       - restic_cache:/root/.cache/restic
 
 volumes:
