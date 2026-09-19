@@ -1,0 +1,82 @@
+{
+  "appflowy": {
+    "enabled": true,
+    "cron": "0 4 * * *",
+    "repo": "rclone:gdrive:backups/appflowy",
+    "db_container": "appflowy_postgres_1",
+    "db_type": "postgres_all",
+    "source_dirs": ["/tmp/minio_data_dump"],
+    "pre_hooks": [
+      "mkdir -p /tmp/minio_data_dump",
+      "docker cp $(docker ps --filter 'name=appflowy.*minio' --format '{{.Names}}' | head -n 1):/data/. /tmp/minio_data_dump/"
+    ],
+    "post_hooks": ["rm -rf /tmp/minio_data_dump"]
+  },
+  "nextcloud": {
+    "enabled": true,
+    "cron": "30 3 * * *",
+    "repo": "rclone:gdrive:backups/nextcloud",
+    "pre_hooks": ["docker exec -u www-data nextcloud php occ maintenance:mode --on"],
+    "database": {
+      "type": "postgres",
+      "container": "nextcloud-db",
+      "user": "nextcloud_user",
+      "db_name": "nextcloud"
+    },
+    "volumes": ["/srv/nextcloud_data"],
+    "post_hooks": ["docker exec -u www-data nextcloud php occ maintenance:mode --off"]
+  },
+  "homarr": {
+    "enabled": true,
+    "cron": "0 3 * * 1",
+    "repo": "rclone:gdrive:backups/homarr",
+    "volumes": ["/opt/homarr/appdata"]
+  },
+  "jellyfin": {
+    "enabled": true,
+    "cron": "30 4 1,15 * *",
+    "repo": "rclone:gdrive:backups/jellyfin",
+    "stop_containers": ["jellyfin"],
+    "volumes": ["/srv/appdata/jellyfin/config"],
+    "conditional_volumes": [
+      {
+        "env_flag": "JELLYFIN_BACKUP_MEDIA",
+        "path": "/mnt/media"
+      }
+    ],
+    "exclude": [
+      "cache",
+      ".cache",
+      "log",
+      "data/transcodes",
+      "data/metadata",
+      "data/trickplay",
+      "*.bif"
+    ],
+    "post_hooks": ["docker start jellyfin"]
+  },
+  "romm": {
+    "enabled": true,
+    "cron": "30 5 * * 1",
+    "repo": "rclone:gdrive:backups/romm",
+    "volumes": ["/opt/romm"]
+  },
+  "bookshelf": {
+    "enabled": true,
+    "cron": "0 5 * * 1",
+    "repo": "rclone:gdrive:backups/bookshelf",
+    "volumes": ["/opt/bookshelf"],
+    "conditional_volumes": [
+      {
+        "env_flag": "BOOKSHELF_BACKUP_BOOKS",
+        "path": "/srv/media/books"
+      }
+    ]
+  },
+  "arr": {
+    "enabled": true,
+    "cron": "0 4 * * 2",
+    "repo": "rclone:gdrive:backups/arr",
+    "volumes": ["/opt/arr-stack"]
+  }
+}

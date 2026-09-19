@@ -1,20 +1,20 @@
 # Backup Manager
 
-A fully containerized, agnostic, and automated backup solution for the homelab infrastructure. It leverages **Restic** for deduplicated, encrypted snapshots and **Rclone** to push backups securely to remote storage (e.g., Google Drive).
+A fully containerized, declarative, and automated backup engine for the homelab infrastructure. It leverages **Restic** for deduplicated, encrypted snapshots, **Rclone** to push backups securely to remote storage (e.g., Google Drive), and **jq** for JSON-driven service orchestration.
 
 ## Features
 
-- **Automated Cron Jobs:** Built-in scheduling for daily/weekly backups.
-- **Environment Driven:** Zero hardcoded paths, credentials, or container names. Fully portable.
-- **Opt-in Services:** Built-in feature toggles to easily enable or disable backups for specific services.
-- **Disaster Recovery Ready:** Includes step-by-step runbooks and automated restore scripts.
+- **Centralized Engine (`backup_engine.sh`):** A single execution engine handles pre-hooks, database dumps, conditional volume mounts, exclusions, snapshot uploads, retention policies, and post-hooks.
+- **Declarative Configuration (`services.json`):** All service parameters, paths, schedules, and container hooks are declared centrally in a clean JSON format.
+- **Dynamic Cron Generation:** Scheduled tasks are read directly from `services.json` and registered into the crontab at container boot (`entrypoint.sh`).
+- **Disaster Recovery Isolation:** Recovery runbooks and atomic recovery scripts are organized within a decoupled `disaster-recovery/` directory to prevent single-point-of-failure dependencies during emergencies.
 - **Monitoring Integration:** Ready to plug into Prometheus/Promtail/Loki stacks without polluting the base configuration.
 
 ## Prerequisites
 
 1. A working Docker and Docker Compose environment.
 2. A valid `rclone.conf` file configured on the host machine (e.g., in `~/.config/rclone/`).
-3. A remote storage backend supported by Rclone.
+3. A remote storage backend supported by Rclone (e.g., `gdrive`).
 
 ## Setup & Installation
 
@@ -25,101 +25,114 @@ Copy the provided example template and populate it with your specific environmen
 cp .env.example .env
 nano .env
 ```
+Ensure you define a strong `RESTIC_PASSWORD` and match the paths to your host system:
 
-Ensure you define a strong `RESTIC_PASSWORD` and match the paths to your host system.
-
--   **Static Hostname:** Set `BACKUP_HOSTNAME` (e.g., `RedServer`) so Restic tracks parent snapshots correctly across container restarts.
+-   **Static Hostname:** Set `BACKUP_HOSTNAME=RedServer` so Restic tracks parent snapshots correctly across container recreations.
     
--   **Opt-in activation:** Backups are disabled by default. You must explicitly set `ENABLE_BACKUP_="true"` in your `.env` to activate the cron schedule for that service.
+-   **Opt-in Activation:** Set `ENABLE_BACKUP_<SERVICE>="true"` in your `.env` to activate automated cron schedules for that service.
     
 
-### 2\. Configure Local Monitoring (Optional)
+### 2\. Configure Disaster Recovery Symlink
 
-If your homelab uses an external Docker network for monitoring (e.g., Promtail), create a `docker-compose.override.yml` file to inject those settings without affecting the core `.yml`:
+The atomic restore scripts resolve runtime variables from `.env`. Ensure the symlink inside `disaster-recovery/` is established:
 
 ```Bash
+ln -s ../.env disaster-recovery/.env
+```    
 
-    cat << 'EOF' > docker-compose.override.yml
-    version: '3.8'
-    services:
-      backup-manager:
-        networks:
-          - monitoring_net
-        labels:
-          logging_jobname: "backup-manager-logs"
-          logging: "promtail"
-    
+### 3\. Configure Local Monitoring (Optional)
+
+If your homelab uses an external Docker network for logging (e.g., Promtail), create a `docker-compose.override.yml` file:
+
+```YAML
+version: '3.8'
+services:
+  backup-manager:
     networks:
-      monitoring_net:
-        external:
-          name: ${DOCKER_MONITORING_NETWORK:-monitoring}
-    EOF
-```
+      - monitoring_net
+    labels:
+      logging_jobname: "backup-manager-logs"
+      logging: "promtail"
+
+networks:
+  monitoring_net:
+    external:
+      name: ${DOCKER_MONITORING_NETWORK:-monitoring}
+```    
 
 _(Note: `docker-compose.override.yml` is ignored by Git)._
 
-### 3\. Build and Deploy
+### 4\. Build and Deploy
 
-Build the image (which dynamically sets up the timezone and cron jobs) and start the container:
+Build the image and launch the container:
+
+```Bash
+docker compose build --no-cache
+docker compose up -d
+```    
+
+Verify that the crontab has been dynamically generated:
+
+```Bash
+docker exec backup-manager crontab -l
+```    
+
+### 5\. Initialize Restic Repositories (First Time Only)
+
+Before taking your first backup on a fresh remote storage backend, initialize the Restic repositories:
 
 ```Bash
 
-    docker compose up -d --build
- ```   
-
-### 4\. Initialize Restic Repositories (First Time Only)
-
-Before taking your first backup on a fresh remote storage, you **must** initialize the Restic repositories. If you skip this, Restic will throw a `does not exist` error.
-
-Run the initialization for each active service using its respective repository path:
-
-```Bash
-
-    docker exec backup-manager restic -r rclone:gdrive:backups/appflowy init
-    docker exec backup-manager restic -r rclone:gdrive:backups/nextcloud init
-    docker exec backup-manager restic -r rclone:gdrive:backups/homarr init
-    docker exec backup-manager restic -r rclone:gdrive:backups/jellyfin init
-    docker exec backup-manager restic -r rclone:gdrive:backups/romm init
-    docker exec backup-manager restic -r rclone:gdrive:backups/bookshelf init
-    docker exec backup-manager restic -r rclone:gdrive:backups/arr init
-  ```  
-
-_(You will see a "created restic repository" success message)._
+docker exec backup-manager restic -r rclone:gdrive:backups/appflowy init
+docker exec backup-manager restic -r rclone:gdrive:backups/nextcloud init
+docker exec backup-manager restic -r rclone:gdrive:backups/homarr init
+docker exec backup-manager restic -r rclone:gdrive:backups/jellyfin init
+docker exec backup-manager restic -r rclone:gdrive:backups/romm init
+docker exec backup-manager restic -r rclone:gdrive:backups/bookshelf init
+docker exec backup-manager restic -r rclone:gdrive:backups/arr init
+```    
 
 ## Usage
 
 ### Trigger a Manual Backup
 
-You can manually trigger any backup script directly inside the running container:
+Run the central backup engine inside the container specifying the target service key from `services.json`:
 
 ```Bash
-
-    docker exec backup-manager /usr/local/bin/backup_appflowy.sh
-    docker exec backup-manager /usr/local/bin/backup_nextcloud.sh
-    docker exec backup-manager /usr/local/bin/backup_homarr.sh
-    docker exec backup-manager /usr/local/bin/backup_jellyfin.sh
-    docker exec backup-manager /usr/local/bin/backup_romm.sh
-    docker exec backup-manager /usr/local/bin/backup_bookshelf.sh
-    docker exec backup-manager /usr/local/bin/backup_arr.sh
+docker exec backup-manager /usr/local/bin/backup_engine.sh <service_name>
 ```    
 
-### View Logs
-
-Cron job outputs are redirected to the container's standard output. View them using:
+Examples:
 
 ```Bash
 
-    docker logs backup-manager -f
+docker exec backup-manager /usr/local/bin/backup_engine.sh nextcloud
+docker exec backup-manager /usr/local/bin/backup_engine.sh jellyfin
+docker exec backup-manager /usr/local/bin/backup_engine.sh arr
+```    
+
+### View Live Logs
+
+Cron and engine execution outputs are streamed to stdout. Inspect them with:
+
+```Bash
+docker compose logs -f backup-manager
 ```    
 
 ## Disaster Recovery
 
-If a service goes down or data is corrupted, do not panic. Refer to the specific runbooks included in this directory for safe, tested recovery procedures:
+Recovery scripts and guides are decoupled from the central engine to ensure atomic, zero-dependency restoration during outages. Refer to the runbooks in `disaster-recovery/`:
 
-- [AppFlowy Disaster Recovery](APPFLOWY_DISASTER_RECOVERY.md)
-- [Bookshelf Disaster Recovery](BOOKSHELF_DISASTER_RECOVERY.md)
-- [Homarr Disaster Recovery](HOMARR_DISASTER_RECOVERY.md)
-- [Jellyfin Disaster Recovery](JELLYFIN_DISASTER_RECOVERY.md)
-- [Nextcloud Disaster Recovery](NEXTCLOUD_DISASTER_RECOVERY.md)
-- [RomM Disaster Recovery](ROMM_DISASTER_RECOVERY.md)
-- [Arr Stack Disaster Recovery](ARR_DISASTER_RECOVERY.md)
+- [AppFlowy Disaster Recovery](disaster-recovery/APPFLOWY_DISASTER_RECOVERY.md)
+- [Arr Stack Disaster Recovery](disaster-recovery/ARR_DISASTER_RECOVERY.md)
+- [Bookshelf Disaster Recovery](disaster-recovery/BOOKSHELF_DISASTER_RECOVERY.md)
+- [Homarr Disaster Recovery](disaster-recovery/HOMARR_DISASTER_RECOVERY.md)
+- [Jellyfin Disaster Recovery](disaster-recovery/JELLYFIN_DISASTER_RECOVERY.md)
+- [Nextcloud Disaster Recovery](disaster-recovery/NEXTCLOUD_DISASTER_RECOVERY.md)
+- [RomM Disaster Recovery](disaster-recovery/ROMM_DISASTER_RECOVERY.md)
+
+To run a recovery procedure:
+
+```Bash
+bash disaster-recovery/restore_<service_name>.sh
+```

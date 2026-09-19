@@ -14,8 +14,6 @@
 # =========================================
 # 3. GLOBAL EXCLUSIONS (Safety Net)
 # =========================================
-# Garantiza que estos archivos nunca se suban,
-# incluso si se permite un directorio entero.
 .env
 .env.*
 docker-compose.override.yml
@@ -51,7 +49,12 @@ backup-manager/*
 !backup-manager/docker-compose.yml
 !backup-manager/*.md
 !backup-manager/*.sh
+!backup-manager/*.json
 !backup-manager/.env.example
+!backup-manager/disaster-recovery/
+backup-manager/disaster-recovery/*
+!backup-manager/disaster-recovery/*.sh
+!backup-manager/disaster-recovery/*.md
 
 # --- Nextcloud ---
 !nextcloud/
@@ -104,3 +107,25 @@ arr-stack/*
 !arr-stack/.env.example
 !arr-stack/*.sh
 !arr-stack/kitsunarr_src/**
+
+# --- Reverse Proxy (Traefik / Nginx Proxy Manager) ---
+!proxy-stack/
+proxy-stack/*
+!proxy-stack/docker-compose.yml
+!proxy-stack/*.md
+!proxy-stack/.env.example
+!proxy-stack/dynamic/**
+
+# --- AdGuard Home ---
+!adguard/
+adguard/*
+!adguard/docker-compose.yml
+!adguard/*.md
+!adguard/.env.example
+
+# --- Komodo ---
+!komodo/
+komodo/*
+!komodo/docker-compose.yml
+!komodo/*.md
+!komodo/.env.example

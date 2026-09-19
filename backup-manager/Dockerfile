@@ -10,28 +10,18 @@ RUN apt-get update && apt-get install -y \
     restic \
     rclone \
     docker.io \
+    jq \
     tzdata \
     ca-certificates \
     curl && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     rm -rf /var/lib/apt/lists/*
 
-COPY backup_nextcloud.sh /usr/local/bin/backup_nextcloud.sh
-COPY backup_appflowy.sh /usr/local/bin/backup_appflowy.sh
-COPY backup_homarr.sh /usr/local/bin/backup_homarr.sh
-COPY backup_jellyfin.sh /usr/local/bin/backup_jellyfin.sh
-COPY backup_romm.sh /usr/local/bin/backup_romm.sh
-COPY backup_bookshelf.sh /usr/local/bin/backup_bookshelf.sh
-COPY backup_arr.sh /usr/local/bin/backup_arr.sh
+WORKDIR /app
+COPY services.json /app/services.json
+COPY backup_engine.sh /usr/local/bin/backup_engine.sh
 COPY entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /usr/local/bin/backup_nextcloud.sh \
-             /usr/local/bin/backup_appflowy.sh \
-             /usr/local/bin/backup_homarr.sh \
-             /usr/local/bin/backup_jellyfin.sh \
-             /usr/local/bin/backup_romm.sh \
-             /usr/local/bin/backup_bookshelf.sh \
-             /usr/local/bin/backup_arr.sh \
-             /entrypoint.sh
+RUN chmod +x /usr/local/bin/backup_engine.sh /entrypoint.sh
 
 CMD ["/entrypoint.sh"]
