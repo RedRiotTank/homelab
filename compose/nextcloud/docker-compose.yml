@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   nextcloud-db:
     container_name: nextcloud-db
     image: postgres:15-alpine
     restart: unless-stopped
     volumes:
-      - ./db_data:/var/lib/postgresql/data
+      - ${NEXTCLOUD_DB_DATA_PATH:-/opt/compose/nextcloud/db_data}:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-nextcloud}
       - POSTGRES_USER=${POSTGRES_USER:-nextcloud_user}
@@ -25,7 +23,7 @@ services:
       - nextcloud-db
       - nextcloud-redis
     volumes:
-      - ./app_config:/var/www/html
+      - ${NEXTCLOUD_APP_CONFIG_PATH:-/opt/compose/nextcloud/app_config}:/var/www/html
       - ${NEXTCLOUD_DATA_PATH:-/srv/nextcloud_data}:/var/www/html/data
     environment:
       - POSTGRES_HOST=nextcloud-db
