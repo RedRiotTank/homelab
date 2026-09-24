@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Theme Manager</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-bright: #ffffff;
+      --accent: #238636;
+      --danger: #da3633;
+      --btn-active: #1f6feb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      padding: 2rem;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+    h1 { color: var(--text-bright); font-size: 1.5rem; }
+    .tabs {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .tab-btn {
+      background: #21262d;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--btn-active);
+      color: #fff;
+      border-color: var(--btn-active);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-container {
+      width: 100%;
+      height: 240px;
+      background: #000;
+      position: relative;
+    }
+    iframe {
+      width: 200%;
+      height: 200%;
+      border: none;
+      transform: scale(0.5);
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+    .card-body {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+    }
+    .theme-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      text-transform: capitalize;
+    }
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .btn-preview {
+      background: #21262d;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+    .btn-preview:hover { background: #30363d; }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--danger);
+      transition: .2s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute; content: "";
+      height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--accent); }
+    input:checked + .slider:before { transform: translateX(20px); }
+    .empty-msg {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem;
+      color: #8b949e;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Error Page Theme Manager</h1>
+    <span id="active-count">Loading...</span>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('403')">403 Forbidden</button>
+    <button class="tab-btn" onclick="switchTab('404')">404 Not Found</button>
+  </div>
+
+  <div class="grid" id="theme-grid"></div>
+
+  <script>
+    let currentType = '403';
+
+    function switchTab(type) {
+      currentType = type;
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.innerText.includes(type));
+      });
+      fetchThemes();
+    }
+
+    async function fetchThemes() {
+      const res = await fetch(`/api/themes/${currentType}`);
+      const data = await res.json();
+      render(data);
+    }
+
+    async function toggleTheme(theme, enabled) {
+      await fetch('/api/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: currentType, theme, enabled })
+      });
+      fetchThemes();
+    }
+
+    function render(themes) {
+      const grid = document.getElementById('theme-grid');
+      grid.innerHTML = '';
+      
+      const names = Object.keys(themes);
+      const active = names.filter(n => themes[n]).length;
+      document.getElementById('active-count').innerText = `${active} of ${names.length} active (${currentType})`;
+
+      if (!names.length) {
+        grid.innerHTML = `<div class="empty-msg">No themes found in <code>/custom-pages/${currentType}/</code>. Add a subfolder to create one!</div>`;
+        return;
+      }
+
+      names.forEach(theme => {
+        const isEnabled = themes[theme];
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="preview-container">
+            <iframe src="/custom_error/${currentType}/${theme}/index.html" loading="lazy"></iframe>
+          </div>
+          <div class="card-body">
+            <div>
+              <div class="theme-name">${theme.replace(/-/g, ' ')}</div>
+            </div>
+            <div class="actions">
+              <a href="/custom_error/${currentType}/${theme}/index.html" target="_blank" class="btn-preview">Open</a>
+              <label class="switch">
+                <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleTheme('${theme}', this.checked)">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    fetchThemes();
+  </script>
+</body>
+</html>

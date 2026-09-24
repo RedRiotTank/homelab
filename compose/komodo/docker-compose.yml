@@ -25,6 +25,7 @@ services:
       - PERIPHERY_PASSKEYS=${KOMODO_PASSKEY}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOST_STACKS_PATH:-/opt}:${CONTAINER_STACKS_PATH:-/opt}
     networks:
       - komodo_internal
 
