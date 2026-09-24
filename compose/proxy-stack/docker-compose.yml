@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   nginx-proxy:
-    image: 'jc21/nginx-proxy-manager:latest'
+    image: jc21/nginx-proxy-manager:latest
     container_name: nginx-proxy-manager
     restart: unless-stopped
     ports:
@@ -10,9 +8,8 @@ services:
       - '${NPM_HTTPS_PORT:-443}:443'
       - '${NPM_ADMIN_PORT:-81}:81'
     volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-      - ./custom-pages:/var/www/custom-pages:ro
+      - ${NPM_DATA_PATH:-./data}:/data
+      - ${NPM_LETSENCRYPT_PATH:-./letsencrypt}:/etc/letsencrypt
     networks:
       - proxy_net
 
@@ -23,31 +20,11 @@ services:
     environment:
       - API_KEY=${CF_API_TOKEN}
       - ZONE=${CF_ZONE}
-      - PROXIED=${CF_PROXIED}
-      - CRON=${CF_CRON}
+      - PROXIED=${CF_PROXIED:-false}
+      - CRON=${CF_CRON:-*/5 * * * *}
     networks:
       - proxy_net
 
-  theme-compiler:
-    image: node:alpine
-    restart: unless-stopped
-    volumes:
-      - ./custom-pages:/themes
-    working_dir: /themes
-    command: >
-      sh -c "npm install -g sass &&
-             sass --watch .:. --no-source-map"
-        
-  theme-manager:
-    image: node:alpine
-    restart: unless-stopped
-    volumes:
-      - ./custom-pages:/themes
-      - ./theme-manager:/app
-    working_dir: /app
-    command: node server.js
-    ports:
-      - "8082:3000"
 networks:
   proxy_net:
     external: true
