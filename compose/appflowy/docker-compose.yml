@@ -41,7 +41,7 @@ services:
       - PGPORT=${POSTGRES_PORT:-5432}
     command: [ "postgres", "-c", "port=${POSTGRES_PORT:-5432}" ]
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "\({POSTGRES_USER}", "-d", "\){POSTGRES_DB}", "-p", "${POSTGRES_PORT:-5432}" ]
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}", "-p", "${POSTGRES_PORT:-5432}" ]
       interval: 5s
       timeout: 5s
       retries: 12
