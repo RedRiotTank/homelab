@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   adguardhome:
     image: adguard/adguardhome:latest
@@ -11,5 +9,5 @@ services:
       - "${ADGUARD_SETUP_PORT:-3030}:3000/tcp"
       - "${ADGUARD_WEB_PORT:-8053}:80/tcp"
     volumes:
-      - ./work:/opt/adguardhome/work
-      - ./conf:/opt/adguardhome/conf
+      - ${ADGUARD_WORK_PATH:-./work}:/opt/adguardhome/work
+      - ${ADGUARD_CONF_PATH:-./conf}:/opt/adguardhome/conf
