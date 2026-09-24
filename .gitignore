@@ -1,131 +1,86 @@
 # =========================================
-# 1. IGNORE ALL BY DEFAULT
-# =========================================
-*
-.*
-
-# =========================================
-# 2. GLOBAL ALLOWANCES (Root Level)
-# =========================================
-!.gitignore
-!README.md
-!.env.example
-
-# =========================================
-# 3. GLOBAL EXCLUSIONS (Safety Net)
+# 1. SECRETS & ENVIRONMENT FILES
 # =========================================
 .env
 .env.*
-docker-compose.override.yml
-*.log
-*.sql
-*.tar
-*.tar.gz
-*.rclone*
-rclone.conf
+!.env.example
 *.key
 *.crt
 *.pem
 
 # =========================================
-# 4. ALLOW-LISTED SERVICES
+# 2. LOCAL DOCKER OVERRIDES & LOGS
 # =========================================
+docker-compose.override.yml
+*.log
+*.sql
+*.tar
+*.tar.gz
+*.bak
+*.swp
 
-# --- Monitoring Stack ---
-!monitoring-stack-gpnc/
-monitoring-stack-gpnc/*
-!monitoring-stack-gpnc/docker-compose.yml
-!monitoring-stack-gpnc/*.md
-!monitoring-stack-gpnc/.env.example
-!monitoring-stack-gpnc/LICENSE
-!monitoring-stack-gpnc/Makefile
-!monitoring-stack-gpnc/configs/**
-!monitoring-stack-gpnc/dashboards/**
+# =========================================
+# 3. LOCAL RUNTIME & VOLUME DIRECTORIES
+# =========================================
+# Generic patterns
+data/
+volumes/
+config/
+storage/
+database/
+db_data/
+letsencrypt/
+custom-pages/
 
-# --- Backup Manager ---
-!backup-manager/
-backup-manager/*
-!backup-manager/Dockerfile
-!backup-manager/docker-compose.yml
-!backup-manager/*.md
-!backup-manager/*.sh
-!backup-manager/*.json
-!backup-manager/.env.example
-!backup-manager/disaster-recovery/
-backup-manager/disaster-recovery/*
-!backup-manager/disaster-recovery/*.sh
-!backup-manager/disaster-recovery/*.md
+# Service-specific persistent directories
+**/conf/
+**/appdata/
+**/kitsunarr-data/
+**/kitsunarr-secrets/
+**/qbit-config/
+**/config_backup_emergency/
+**/app_config/
+**/assets/
+**/library/
+**/resources/
 
-# --- Nextcloud ---
-!nextcloud/
-nextcloud/*
-!nextcloud/docker-compose.yml
-!nextcloud/*.md
-!nextcloud/.env.example
+# Local build / clone residues not meant for git root
+backup-manager-old-backup/
+minecraft_servers/
 
-# --- AppFlowy ---
-!appflowy/
-appflowy/*
-!appflowy/docker-compose.yml
-!appflowy/nginx/
-!appflowy/*.md
-!appflowy/.env.example
+# Custom private services (not tracked in this public repo)
+portfolio/
+pseudorandomometricsequencesapi/
+redalchemy/
 
-# --- Homarr ---
-!homarr/
-homarr/*
-!homarr/docker-compose.yml
-!homarr/*.md
-!homarr/.env.example
+# Kitsunarr build sources
+compose/arr-stack/kitsunarr_src/
 
-# --- Jellyfin ---
-!jellyfin/
-jellyfin/*
-!jellyfin/docker-compose.yml
-!jellyfin/*.md
-!jellyfin/.env.example
-
-# --- RomM (Retro) ---
-!romm/
-romm/*
-!romm/docker-compose.yml
-!romm/*.md
-!romm/.env.example
-
-# --- Bookshelf ---
-!bookshelf/
-bookshelf/*
-!bookshelf/docker-compose.yml
-!bookshelf/*.md
-!bookshelf/.env.example
-
-# --- Arr Stack ---
-!arr-stack/
-arr-stack/*
-!arr-stack/docker-compose.yml
-!arr-stack/*.md
-!arr-stack/.env.example
-!arr-stack/*.sh
-!arr-stack/kitsunarr_src/**
-
-# --- Reverse Proxy (Traefik / Nginx Proxy Manager) ---
-!proxy-stack/
-proxy-stack/*
-!proxy-stack/docker-compose.yml
-!proxy-stack/*.md
-!proxy-stack/.env.example
-!proxy-stack/dynamic/**
-
-# --- AdGuard Home ---
-!adguard/
-adguard/*
-!adguard/docker-compose.yml
-!adguard/*.md
-!adguard/.env.example
-
-# --- Komodo ---
-!komodo/
-komodo/*
-!komodo/docker-compose.yml
-!komodo/*.md
-!komodo/.env.example
+# AppFlowy upstream repo clone residues
+compose/appflowy/.dockerignore
+compose/appflowy/.github/
+compose/appflowy/.gitignore
+compose/appflowy/.sqlx/
+compose/appflowy/Cargo.*
+compose/appflowy/Dockerfile
+compose/appflowy/LICENSE
+compose/appflowy/Makefile
+compose/appflowy/admin_frontend/
+compose/appflowy/deny.toml
+compose/appflowy/dev.env
+compose/appflowy/doc/
+compose/appflowy/docker-compose-ci.yml
+compose/appflowy/docker-compose-dev.yml
+compose/appflowy/docker-compose-extras.yml
+compose/appflowy/docker/
+compose/appflowy/email_template/
+compose/appflowy/external_proxy_config/
+compose/appflowy/libs/
+compose/appflowy/nano
+compose/appflowy/rust-toolchain.toml
+compose/appflowy/rustfmt.toml
+compose/appflowy/script/
+compose/appflowy/services/
+compose/appflowy/src/
+compose/appflowy/tests/
+compose/appflowy/xtask/

@@ -188,23 +188,24 @@ services:
     logging: *default-logging
 
   promtail:
-    image:  grafana/promtail:3.3.2
-    container_name: promtail
-    restart: unless-stopped
-    volumes:
-      - ./configs/promtail/promtail.yaml:/etc/promtail/docker-config.yaml
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: -config.file=/etc/promtail/docker-config.yaml
-    depends_on:
-      - loki
-    cpus: ${MONITORING_CPUS:-0.5}
-    mem_limit: ${MONITORING_MEM_LIMIT:-512m}
-    networks:
-      - monitoring
-    labels:
-      <<: *default-labels
-    logging: *default-logging
+      image: grafana/promtail:3.3.2
+      container_name: promtail
+      restart: unless-stopped
+      user: root
+      volumes:
+        - ./configs/promtail/promtail.yaml:/etc/promtail/docker-config.yaml
+        - /var/lib/docker/containers:/var/lib/docker/containers:ro
+        - /var/run/docker.sock:/var/run/docker.sock
+      command: -config.file=/etc/promtail/docker-config.yaml
+      depends_on:
+        - loki
+      cpus: ${MONITORING_CPUS:-0.5}
+      mem_limit: ${MONITORING_MEM_LIMIT:-512m}
+      networks:
+        - monitoring
+      labels:
+        <<: *default-labels
+      logging: *default-logging
 
 volumes:
   grafana-data: {}
