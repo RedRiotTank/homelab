@@ -208,9 +208,15 @@ services:
       logging: *default-logging
 
 volumes:
-  grafana-data: {}
-  prometheus-data: {}
-  loki-data: {}
+  grafana-data:
+    name: ${GRAFANA_DATA_VOLUME:-monitoring-stack-gpnc_grafana-data}
+    external: true
+  prometheus-data:
+    name: ${PROMETHEUS_DATA_VOLUME:-monitoring-stack-gpnc_prometheus-data}
+    external: true
+  loki-data:
+    name: ${LOKI_DATA_VOLUME:-monitoring-stack-gpnc_loki-data}
+    external: true
 
 networks:
   monitoring:
