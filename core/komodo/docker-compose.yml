@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   komodo:
-    image: ghcr.io/mbecker20/komodo:${KOMODO_VERSION:-latest}
+    image: ghcr.io/moghtech/komodo-core:${KOMODO_VERSION:-latest}
     container_name: komodo
     hostname: komodo
     restart: unless-stopped
@@ -18,10 +18,11 @@ services:
       - komodo_internal
 
   komodo-periphery:
-    image: ghcr.io/mbecker20/periphery:${KOMODO_VERSION:-latest}
+    image: ghcr.io/moghtech/komodo-periphery:${KOMODO_VERSION:-latest}
     container_name: komodo-periphery
     restart: unless-stopped
     environment:
+      - PERIPHERY_SSL_ENABLED=false
       - PERIPHERY_PASSKEYS=${KOMODO_PASSKEY}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
