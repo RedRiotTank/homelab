@@ -1,16 +1,12 @@
-version: '3.8'
-
 services:
   backup-manager:
     container_name: backup-manager
-    hostname: ${BACKUP_HOSTNAME:-Server}
+    hostname: ${BACKUP_HOSTNAME:-RedServer}
     build:
       context: .
       args:
         TZ: ${TIMEZONE:-Europe/Madrid}
     restart: always
-    env_file:
-      - .env
     environment:
       - DOCKER_API_VERSION=1.41
       - TZ=${TIMEZONE:-Europe/Madrid}
@@ -18,13 +14,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${NEXTCLOUD_HOST_DATA:-/srv/nextcloud_data}:${NEXTCLOUD_DATA_DIR:-/srv/nextcloud_data}
       - ${HOMARR_HOST_DATA:-/opt/homarr/appdata}:${HOMARR_DATA_DIR:-/opt/homarr/appdata}
-      - ${RCLONE_HOST_CONFIG:-~/.config/rclone}:/root/.config/rclone
+      - ${RCLONE_HOST_CONFIG:-/home/deployer/.config/rclone}:/root/.config/rclone
       - ${JELLYFIN_HOST_CONFIG:-/srv/appdata/jellyfin/config}:${JELLYFIN_CONFIG_DIR:-/srv/appdata/jellyfin/config}
       - ${JELLYFIN_HOST_MEDIA:-/mnt/media}:${JELLYFIN_MEDIA_DIR:-/mnt/media}:ro
       - ${ROMM_HOST_DATA:-/opt/romm}:${ROMM_DATA_DIR:-/opt/romm}
-      - ${BOOKSHELF_HOST_DATA:-/opt/bookshelf}:${BOOKSHELF_DATA_DIR:-/opt/bookshelf}
+      - ${BOOKSHELF_HOST_DATA:-/opt/compose/bookshelf/config}:${BOOKSHELF_DATA_DIR:-/opt/bookshelf}
       - ${BOOKSHELF_HOST_BOOKS:-/srv/media/books}:${BOOKSHELF_BOOKS_DIR:-/srv/media/books}:ro
-      - ${ARR_HOST_DATA:-/opt/arr-stack}:${ARR_DATA_DIR:-/opt/arr-stack}
+      - ${ARR_HOST_DATA:-/opt/compose/arr-stack}:${ARR_DATA_DIR:-/opt/arr-stack}
       - ${PROXY_HOST_DATA:-/opt/proxy-stack}:${PROXY_DATA_DIR:-/opt/proxy-stack}:ro
       - ${ADGUARD_HOST_DATA:-/opt/adguard}:${ADGUARD_DATA_DIR:-/opt/adguard}:ro
       - restic_cache:/root/.cache/restic
