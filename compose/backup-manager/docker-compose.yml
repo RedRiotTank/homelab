@@ -8,8 +8,14 @@ services:
         TZ: ${TIMEZONE:-Europe/Madrid}
     restart: always
     environment:
-      - DOCKER_API_VERSION=1.41
-      - TZ=${TIMEZONE:-Europe/Madrid}
+          - DOCKER_API_VERSION=1.41
+          - TZ=${TIMEZONE:-Europe/Madrid}
+          - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+          - RCLONE_CONFIG_PATH=${RCLONE_CONFIG_PATH:-/root/.config/rclone/rclone.conf}
+          - BACKUP_HOSTNAME=${BACKUP_HOSTNAME:-RedServer}
+          - JELLYFIN_BACKUP_MEDIA=${JELLYFIN_BACKUP_MEDIA:-false}
+          - BOOKSHELF_BACKUP_BOOKS=${BOOKSHELF_BACKUP_BOOKS:-false}
+          - ROMM_BACKUP_LIBRARY=${ROMM_BACKUP_LIBRARY:-false}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${NEXTCLOUD_HOST_DATA:-/srv/nextcloud_data}:${NEXTCLOUD_DATA_DIR:-/srv/nextcloud_data}

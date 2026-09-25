@@ -14,11 +14,12 @@ run_post_hooks() {
       [ -n "$hook" ] && eval "$hook" || true
     done <<< "$POST_HOOKS"
   fi
-  [ -f "$TEMP_DB_DUMP" ] && rm -f "$TEMP_DB_DUMP"
+  [ -n "\({TEMP_DB_DUMP:-}" ] && [ -f "\)TEMP_DB_DUMP" ] && rm -f "$TEMP_DB_DUMP"
 }
 trap run_post_hooks EXIT
 
 SERVICE_NAME="${1}"
+TEMP_DB_DUMP=""
 JSON_FILE="/app/services.json"
 
 if [ -z "$SERVICE_NAME" ]; then
