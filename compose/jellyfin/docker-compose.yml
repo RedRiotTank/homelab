@@ -3,20 +3,22 @@ services:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Madrid
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TIMEZONE:-Europe/Madrid}
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
-      - /srv/appdata/jellyfin/config:/config
-      - /mnt/media:/data:rslave
+      - ${JELLYFIN_CONFIG_DIR:-/srv/appdata/jellyfin/config}:/config
+      - ${MEDIA_DIR:-/mnt/media}:/data:rslave
     ports:
-      - 8096:8096
+      - "${JELLYFIN_PORT:-8096}:8096"
       - 8920:8920
     restart: unless-stopped
     deploy:
       resources:
+        limits:
+          memory: ${JELLYFIN_MEMORY_LIMIT:-4096M}
         reservations:
           devices:
             - driver: nvidia
