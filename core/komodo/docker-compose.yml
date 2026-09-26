@@ -1,17 +1,18 @@
-version: '3.8'
-
 services:
   komodo:
     image: ghcr.io/moghtech/komodo-core:${KOMODO_VERSION:-latest}
     container_name: komodo
     hostname: komodo
     restart: unless-stopped
+    # Uncomment for initial bootstrap if neither a reverse proxy nor an override is used:
+    # ports:
+    #   - "${KOMODO_PORT:-127.0.0.1:9120}:9120"
     environment:
       - KOMODO_DATABASE_URI=mongodb://komodo-mongo:27017/komodo
       - KOMODO_LOCAL_AUTH=true
       - KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET}
       - KOMODO_PASSKEY=${KOMODO_PASSKEY}
-      - KOMODO_FIRST_SERVER=${KOMODO_FIRST_SERVER}
+      - KOMODO_FIRST_SERVER=${KOMODO_FIRST_SERVER:-true}
     volumes:
       - komodo_data:/config
     networks:
