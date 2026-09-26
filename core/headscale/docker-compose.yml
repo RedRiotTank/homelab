@@ -19,9 +19,9 @@ services:
     volumes:
         - /var/run/docker.sock:/var/run/docker.sock:ro
         - ${HEADPLANE_CONFIG_DIR:-./headplane-config/config.yaml}:/etc/headplane/config.yaml
-      ports:
+    ports:
         - "3001:3000"
-      networks:
+    networks:
         - proxy_net
 
 networks:
