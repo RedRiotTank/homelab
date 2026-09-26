@@ -9,8 +9,6 @@ services:
     volumes:
       - ${HEADSCALE_CONFIG_DIR:-./config}:/etc/headscale
       - ${HEADSCALE_DATA_DIR:-./data}:/var/lib/headscale
-    ports:
-      - "8080:8080"
     networks:
       - proxy_net
 
@@ -26,7 +24,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
-      - "3000:3000"
+      - "3001:3001"
     networks:
       - proxy_net
 
