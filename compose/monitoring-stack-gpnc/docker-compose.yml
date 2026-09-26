@@ -168,7 +168,7 @@ services:
     logging: *default-logging
 
   loki:
-    image: grafana/loki:3.3.2
+    image: grafana/loki:3.5.0
     restart: unless-stopped
     container_name: loki
     user: root
@@ -188,7 +188,7 @@ services:
     logging: *default-logging
 
   promtail:
-      image: grafana/promtail:3.3.2
+      image: grafana/promtail:3.5.0
       container_name: promtail
       restart: unless-stopped
       user: root
