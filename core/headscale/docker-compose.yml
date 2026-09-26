@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     command: serve
     volumes:
-      - ${HOST_CONFIG_PATH:-/opt/core/headscale/config}:/etc/
+      - ${HOST_CONFIG_PATH:-/opt/core/headscale/config}:/etc/headscale
       - headscale_data:/var/lib/headscale
     networks:
       - headscale_internal
@@ -14,14 +14,9 @@ services:
     image: ghcr.io/tale/headplane:latest
     container_name: headplane
     restart: unless-stopped
-    environment:
-      - COOKIE_SECRET=${HEADPLANE_COOKIE_SECRET}
-      - HEADSCALE_URL=http://headscale:8080
-      - HEADSCALE_API_KEY=${HEADPLANE_API_KEY}
-      - HEADSCALE_INTEGRATION=docker
-      - HEADSCALE_CONTAINER=headscale
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${HEADPLANE_CONFIG_DIR:-/opt/core/headscale/headplane-config}/config.yaml:/etc/headplane/config.yaml
     networks:
       - headscale_internal
 
