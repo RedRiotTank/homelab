@@ -16,17 +16,13 @@ services:
     image: ghcr.io/tale/headplane:latest
     container_name: headplane
     restart: unless-stopped
-    environment:
-      - HEADSCALE_URL=http://headscale:8080
-      - HEADSCALE_INTEGRATION=docker
-      - HEADSCALE_CONTAINER=headscale
-      - COOKIE_SECRET=${COOKIE_SECRET}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "3001:3001"
-    networks:
-      - proxy_net
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+        - ${HEADPLANE_CONFIG_DIR:-./headplane-config/config.yaml}:/etc/headplane/config.yaml
+      ports:
+        - "3001:3000"
+      networks:
+        - proxy_net
 
 networks:
   proxy_net:
