@@ -16,8 +16,9 @@ services:
       - /dev/net/tun:/dev/net/tun
     environment:
       - TS_HOSTNAME=${NODE_HOSTNAME}
-      - TS_EXTRA_ARGS=--login-server=\({HEADSCALE_URL}\){TAILSCALE_ADDITIONAL_ARGS:-}
+      - TS_LOGIN_SERVER=${HEADSCALE_URL}
       - TS_AUTHKEY=${HEADSCALE_AUTHKEY}
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_ACCEPT_DNS=${TAILSCALE_ACCEPT_DNS:-true}
+      - TS_EXTRA_ARGS=${TAILSCALE_ADDITIONAL_ARGS:-}
