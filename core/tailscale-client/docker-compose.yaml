@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  client:
+    image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
+    container_name: ${CONTAINER_NAME:-tailscale}
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ${TAILSCALE_STATE_DIR:-./state}:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_HOSTNAME=${NODE_HOSTNAME}
+      - TS_EXTRA_ARGS=--login-server=\({HEADSCALE_URL}\){TAILSCALE_ADDITIONAL_ARGS:-}
+      - TS_AUTHKEY=${HEADSCALE_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_ACCEPT_DNS=${TAILSCALE_ACCEPT_DNS:-true}
