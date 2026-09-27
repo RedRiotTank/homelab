@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   client:
     image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
@@ -12,12 +10,15 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     volumes:
-      - ${TAILSCALE_STATE_DIR:-./state}:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
+      - tailscale_data:/var/lib/tailscale
     environment:
       - TS_HOSTNAME=${NODE_HOSTNAME}
       - TS_AUTHKEY=${HEADSCALE_AUTHKEY}
-      - TS_EXTRA_ARGS=${TAILSCALE_EXTRA_ARGS}
+      - TS_EXTRA_ARGS=--login-server=${HEADSCALE_URL}${TAILSCALE_EXTRA_ARGS:-}
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_ACCEPT_DNS=${TAILSCALE_ACCEPT_DNS:-true}
+
+volumes:
+  tailscale_data:
+    name: tailscale_data
