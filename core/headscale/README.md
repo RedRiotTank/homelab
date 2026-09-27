@@ -78,7 +78,7 @@ The base `docker-compose.yml` in this repository isolates the containers within 
 
 To grant your Reverse Proxy access to Headscale and Headplane without altering the base repository, create a `docker-compose.override.yml` in your host's deployment directory (e.g., `/opt/core/headscale/`):
 
-    sservices:
+    services:
       headscale:
         networks:
           # Ingress network for reverse proxy access
@@ -125,3 +125,11 @@ _Note: Replace `proxy_net` and `monitoring_net` with the actual names of the ext
         
     
 5.  Configure your Reverse Proxy to point your domains to the `headscale` (port 8080) and `headplane` (port 3000) containers.
+
+## Next Steps: Connecting Nodes
+
+Once the Headscale control server is up and running, you need to attach your host machines to the VPN mesh network.
+
+-   **For homelab servers (Linux/Docker):** Refer to the [Tailscale Client Node documentation](../tailscale-client/README.md) to deploy the client agent alongside this stack.
+    
+-   **For personal devices (iOS/Android/Windows/Mac):** Download the official Tailscale app, change the Alternate Server to your custom domain (`https://vpn.example.com`), and authenticate using the Headplane UI.
