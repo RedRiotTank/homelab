@@ -8,8 +8,8 @@ services:
       - '${NPM_HTTPS_PORT:-443}:443'
       - '${NPM_ADMIN_PORT:-81}:81'
     volumes:
-      - ${NPM_DATA_PATH:-./data}:/data
-      - ${NPM_LETSENCRYPT_PATH:-./letsencrypt}:/etc/letsencrypt
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
     networks:
       - proxy_net
 
@@ -24,6 +24,12 @@ services:
       - CRON=${CF_CRON:-*/5 * * * *}
     networks:
       - proxy_net
+
+volumes:
+  npm_data:
+    name: npm_data
+  npm_letsencrypt:
+    name: npm_letsencrypt
 
 networks:
   proxy_net:
