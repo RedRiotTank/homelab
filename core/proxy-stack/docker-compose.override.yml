@@ -1,0 +1,19 @@
+services:
+  nginx-proxy:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "proxy-stack"
+      logging: "promtail"
+
+  cloudflare-ddns:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "proxy-stack"
+      logging: "promtail"
+
+networks:
+  monitoring_net:
+    external: true
+    name: monitoring

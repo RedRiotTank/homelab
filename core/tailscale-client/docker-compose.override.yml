@@ -1,0 +1,5 @@
+services:
+  client:
+    labels:
+      logging_jobname: "tailscale-client"
+      logging: "tailscale"
