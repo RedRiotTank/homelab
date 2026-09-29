@@ -36,7 +36,7 @@ Exposing services directly to the public internet is risky. For private homelab 
 
 Instead of internal traffic going out to the public internet and bouncing back (Hairpin NAT), configure AdGuard to resolve your domains locally:
 
--   Go to your [AdGuard Home](https://www.google.com/search?q=../adguard/README.md) dashboard.
+-   Go to your [AdGuard Home](../adguard/README.md) dashboard.
     
 -   Navigate to **Filters -> DNS Rewrites**.
     
@@ -74,7 +74,7 @@ To block public access to your private services, use Nginx Proxy Manager's **Acc
 
 This repository includes a `docker-compose.override.yml` file designed to integrate this stack with the homelab's central observability infrastructure (Promtail/Loki).
 
-For more details on the telemetry network, see the [Monitoring Stack Documentation](https://www.google.com/search?q=../monitoring-stack-gpnc/README.md).
+For more details on the telemetry network, see the [Monitoring Stack Documentation](../monitoring-stack-gpnc/README.md).
 
 **⚠️ Optional Feature:** The override is completely optional. If you do not have the monitoring stack deployed:
 
