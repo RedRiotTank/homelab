@@ -29,26 +29,37 @@ Before starting the stack, you need to prepare the configuration directories and
 
 Create the directory defined in your `.env` (e.g., `/opt/core/headscale/config`) and place a `config.yaml` inside it.
 
-You can download the base template from the [official Headscale repository](https://github.com/juanfont/headscale/blob/main/config-example.yaml?utm_source=gemini). Ensure you modify the following critical values:
+You can download the base template from the [official Headscale repository](https://github.com/juanfont/headscale/blob/main/config-example.yaml). Ensure you modify the following critical values:
 - `server_url`: Your external domain (e.g., `https://vpn.example.com`).
 - `listen_addr`: Set to `0.0.0.0:8080`.
 - `metrics_listen_addr`: Set to `127.0.0.1:9090`.
 - `database.sqlite.path`: Set to `/var/lib/headscale/db.sqlite` (mapping to the Docker volume).
+- **DNS Configuration:** To enable the [Split-Brain DNS architecture](../adguard/README.md), ensure MagicDNS is enabled and set the global nameserver to your AdGuard Home IP (e.g., the Tailscale Tunnel IP `100.64.0.1`).
+  ```yaml
+  dns:
+    magic_dns: true
+    base_domain: tailnet.example.com
+    override_local_dns: true
+    nameservers:
+      global:
+        - 100.64.0.1 # Routes VPN DNS queries to AdGuard Home
+        ```   
 
-### 2. Headplane Configuration (`config.yaml`)
+### 2\. Headplane Configuration (`config.yaml`)
 
 Create the directory defined in your `.env` (e.g., `/opt/core/headscale/headplane-config`) and create a `config.yaml` file with the following structure:
-```yaml
-server:
-  port: 3000
-  cookie_secret: "replace_with_a_random_32_character_string"
-headscale:
-  url: http://headscale:8080
-  api_key: "replace_with_generated_api_key"
-  integration:
-    type: docker
-    container_name: headscale
-```
+
+
+    server:
+      port: 3000
+      cookie_secret: "replace_with_a_random_32_character_string"
+    headscale:
+      url: http://headscale:8080
+      api_key: "replace_with_generated_api_key"
+      integration:
+        type: docker
+        container_name: headscale
+    
 
 **How to get the Headscale API Key:** Because Headplane needs an API key to communicate with Headscale, you may need to start Headscale first to generate it:
 
@@ -56,7 +67,6 @@ headscale:
     
 2.  Run the following command on your host to generate a 90-day API key:
     
-    Bash
     
         docker exec headscale headscale apikeys create --expiration 90d
         
@@ -65,19 +75,17 @@ headscale:
     
 4.  Restart the Headplane container.
     
+## External Networks & Observability (Override Layer)
 
-## Observability & The Override Layer
+This repository includes a `docker-compose.override.yml` file designed to seamlessly attach this stack to the homelab's shared external networks:
 
-This repository includes a `docker-compose.override.yml` file designed to integrate this stack with the homelab's central observability infrastructure (Promtail/Loki) and the Ingress Proxy.
+- **`proxy_net`:** Connects Headplane to the Ingress Proxy for HTTPS/SSL termination. See the [Proxy Stack Documentation](../proxy-stack/README.md).
+- **`monitoring_net`:** Integrates Headscale with the central observability infrastructure (Promtail/Loki) for log ingestion. See the [Monitoring Stack Documentation](../monitoring-stack-gpnc/README.md).
 
-For more details on the telemetry network, see the [Monitoring Stack Documentation](https://www.google.com/search?q=../monitoring-stack-gpnc/README.md).
+**⚠️ Optional Feature:** This override layer is entirely optional. If you are running this stack standalone without the proxy or monitoring environments:
 
-**⚠️ Optional Feature:** The override is completely optional. If you do not have the monitoring stack or proxy stack deployed:
-
--   **Komodo Users:** Simply omit `docker-compose.override.yml` from the "File Paths" configuration.
-    
--   **CLI Users:** Delete the override file, or explicitly run `docker compose -f docker-compose.yml up -d`.
-    
+- **Komodo Users:** Simply omit `docker-compose.override.yml` from the "File Paths" configuration.
+- **CLI Users:** Delete the override file, or explicitly run `docker compose -f docker-compose.yml up -d`.
 
 ## Setup & Deployment
 
@@ -101,7 +109,8 @@ For more details on the telemetry network, see the [Monitoring Stack Documentati
         
     
 2.  Start the stack:
-
+    
+    
         docker compose up -d
         
     
