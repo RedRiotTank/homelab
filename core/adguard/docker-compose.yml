@@ -6,8 +6,21 @@ services:
     ports:
       - "${ADGUARD_DNS_PORT:-53}:53/tcp"
       - "${ADGUARD_DNS_PORT:-53}:53/udp"
-      - "${ADGUARD_SETUP_PORT:-3030}:3000/tcp"
-      - "${ADGUARD_WEB_PORT:-8053}:80/tcp"
+      # Failsafe local access (NPM will route via proxy_net instead)
+      - "${ADGUARD_SETUP_PORT:-127.0.0.1:3030}:3000/tcp"
+      - "${ADGUARD_WEB_PORT:-127.0.0.1:8053}:80/tcp"
     volumes:
-      - ${ADGUARD_WORK_PATH:-./work}:/opt/adguardhome/work
-      - ${ADGUARD_CONF_PATH:-./conf}:/opt/adguardhome/conf
+      - adguard_work:/opt/adguardhome/work
+      - adguard_conf:/opt/adguardhome/conf
+    networks:
+      - proxy_net
+
+volumes:
+  adguard_work:
+    name: adguard_work
+  adguard_conf:
+    name: adguard_conf
+
+networks:
+  proxy_net:
+    external: true
