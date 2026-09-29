@@ -45,7 +45,7 @@ Edit the `.env` file with your specific values:
 
 Because this container runs in `network_mode: host`, it **cannot** be attached to Docker networks (like `proxy_net` or `monitoring_net`).
 
-Instead, this repository includes a `docker-compose.override.yml` file strictly to inject logging metadata (labels) for central log shippers (such as Promtail/Loki) to capture the client's output. For more details, see the [Monitoring Stack Documentation](https://www.google.com/search?q=../monitoring-stack-gpnc/README.md).
+Instead, this repository includes a `docker-compose.override.yml` file strictly to inject logging metadata (labels) for central log shippers (such as Promtail/Loki) to capture the client's output. For more details, see the [Monitoring Stack Documentation](../monitoring-stack-gpnc/README.md).
 
 **⚠️ Optional Feature:** The override is completely optional. If you do not have the monitoring stack deployed:
 
