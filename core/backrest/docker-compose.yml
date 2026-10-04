@@ -19,6 +19,8 @@ services:
       - "${HOST_RCLONE_CONFIG_DIR:-/home/deployer/.config/rclone}:/root/.config/rclone:ro"
       - "${HOST_HOMELAB_DIR:-/home/deployer/homelab}:/backup/homelab:ro"
       - "${HOST_DOCKER_VOLUMES_DIR:-/var/lib/docker/volumes}:/backup/docker_volumes:ro"
+      # Use it for external volumes (for repos)
+      - "${HOST_EXTERNAL_MOUNTS:-/mnt}:/repos/external:rw"
     networks:
       - proxy_net
 
