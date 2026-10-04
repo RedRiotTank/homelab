@@ -1,0 +1,37 @@
+services:
+  backrest:
+    image: ghcr.io/garethgeorge/backrest:latest
+    container_name: backrest
+    restart: unless-stopped
+    ports:
+      - "${BACKREST_PORT:-127.0.0.1:9898}:9898/tcp"
+    environment:
+      - BACKREST_DATA=/data
+      - BACKREST_CONFIG=/config/config.json
+      - XDG_CACHE_HOME=/cache
+      - TMPDIR=/tmp
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - backrest_data:/data
+      - backrest_config:/config
+      - backrest_cache:/cache
+      - backrest_tmp:/tmp
+      - "${HOST_RCLONE_CONFIG_DIR:-/home/deployer/.config/rclone}:/root/.config/rclone:ro"
+      - "${HOST_HOMELAB_DIR:-/home/deployer/homelab}:/backup/homelab:ro"
+      - "${HOST_DOCKER_VOLUMES_DIR:-/var/lib/docker/volumes}:/backup/docker_volumes:ro"
+    networks:
+      - proxy_net
+
+volumes:
+  backrest_data:
+    name: backrest_data
+  backrest_config:
+    name: backrest_config
+  backrest_cache:
+    name: backrest_cache
+  backrest_tmp:
+    name: backrest_tmp
+
+networks:
+  proxy_net:
+    external: true
