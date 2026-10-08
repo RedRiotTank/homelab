@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.46.0}
+    container_name: cadvisor-${NODE_HOSTNAME:-agent}
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "${CADVISOR_PORT:-8080}:8080"
+    cpus: ${AGENT_CPUS:-0.5}
+    mem_limit: ${AGENT_MEM_LIMIT:-256m}
+
+  node-exporter:
+    image: prom/node-exporter:${NODE_EXPORTER_VERSION:-v1.5.0}
+    container_name: node-exporter-${NODE_HOSTNAME:-agent}
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points'
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - "${NODE_EXPORTER_PORT:-9100}:9100"
+    cpus: ${AGENT_CPUS:-0.5}
+    mem_limit: ${AGENT_MEM_LIMIT:-256m}
+
+  promtail:
+    image: grafana/promtail:${PROMTAIL_VERSION:-3.5.0}
+    container_name: promtail-${NODE_HOSTNAME:-agent}
+    restart: unless-stopped
+    user: root
+    environment:
+      - LOKI_URL=${LOKI_URL}
+      - NODE_HOSTNAME=${NODE_HOSTNAME}
+    volumes:
+      - ./configs/promtail.yaml:/etc/promtail/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: 
+      - '-config.file=/etc/promtail/config.yaml'
+      - '-config.expand-env=true'
+    cpus: ${AGENT_CPUS:-0.5}
+    mem_limit: ${AGENT_MEM_LIMIT:-256m}
