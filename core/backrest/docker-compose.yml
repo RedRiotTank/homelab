@@ -12,15 +12,26 @@ services:
       - TMPDIR=/tmp
       - TZ=${TZ:-Europe/Madrid}
     volumes:
+      # Internal state, cache and config
       - backrest_data:/data
       - backrest_config:/config
       - backrest_cache:/cache
       - backrest_tmp:/tmp
+
+      # Cloud storage credentials (rclone)
       - "${HOST_RCLONE_CONFIG_DIR:-/home/deployer/.config/rclone}:/root/.config/rclone:ro"
+
+      # Backup sources (read-only)
       - "${HOST_HOMELAB_DIR:-/home/deployer/homelab}:/backup/homelab:ro"
       - "${HOST_DOCKER_VOLUMES_DIR:-/var/lib/docker/volumes}:/backup/docker_volumes:ro"
-      # Use it for external volumes (for repos)
-      - "${HOST_EXTERNAL_MOUNTS:-/mnt}:/repos/external:rw"
+      - "${HOST_OPT_DIR:-/opt}:/backup/opt:ro"
+      - "${HOST_SRV_DIR:-/srv}:/backup/srv:ro"
+
+      # Docker socket (enables container inspection and pre-backup hooks)
+      - "${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock:ro"
+
+      # Destination storage repository (read-write for snapshots)
+      - "${BACKREST_REPO_DIR:-/mnt/backups}:/repos/external:rw"
     networks:
       - proxy_net
 
