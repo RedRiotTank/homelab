@@ -34,7 +34,7 @@ scrape_configs:
         labels:
           container: 'node-exporter'
           instance: 'redserver'
-      - targets: [ '100.64.0.1:9100' ]
+      - targets: [ '100.64.0.2:9100' ]
         labels:
           container: 'node-exporter'
           instance: 'crimsonserver'
@@ -45,7 +45,7 @@ scrape_configs:
         labels:
           container: 'cadvisor'
           instance: 'redserver'
-      - targets: [ '100.64.0.1:8080' ]
+      - targets: [ '100.64.0.2:8080' ]
         labels:
           container: 'cadvisor'
           instance: 'crimsonserver'
