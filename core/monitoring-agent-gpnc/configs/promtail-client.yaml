@@ -14,5 +14,17 @@ scrape_configs:
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
         target_label: 'container'
+      
+      - source_labels: ['__meta_docker_container_label_logging_jobname']
+        target_label: 'job'
+      
+      - source_labels: ['__meta_docker_container_label_logging_jobname', '__meta_docker_container_label_com_docker_compose_project']
+        regex: '^;(.+)'
+        target_label: 'job'
+        replacement: '$1'
+        
       - target_label: 'host'
         replacement: '${NODE_HOSTNAME}'
+        
+    pipeline_stages:
+      - docker: {}
