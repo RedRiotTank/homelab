@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.46.0}
