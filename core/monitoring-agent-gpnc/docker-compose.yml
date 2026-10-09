@@ -4,7 +4,6 @@ services:
     container_name: cadvisor-${NODE_HOSTNAME:-agent}
     restart: unless-stopped
     privileged: true
-    cgroupns_mode: host
     devices:
       - /dev/kmsg:/dev/kmsg
     volumes:
