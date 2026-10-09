@@ -1,12 +1,9 @@
-version: "3.9"
-
 services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.46.0}
     container_name: cadvisor-${NODE_HOSTNAME:-agent}
     restart: unless-stopped
     privileged: true
-    cgroupns_mode: host
     devices:
       - /dev/kmsg:/dev/kmsg
     volumes:
