@@ -12,7 +12,7 @@ services:
 
 networks:
   monitoring_net:
-    external:
-      name: monitoring
+    name: monitoring
+    external: true
   proxy_net:
     external: true
