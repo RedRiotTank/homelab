@@ -48,4 +48,4 @@ scrape_configs:
       - targets: [ '100.64.0.2:8080' ]
         labels:
           container: 'cadvisor'
-          instance: 'crimsonserver''
+          instance: 'crimsonserver'
