@@ -45,10 +45,7 @@ scrape_configs:
         labels:
           container: 'cadvisor'
           instance: 'redserver'
-  
-  - job_name: docker-exporter
-    static_configs:
-      - targets: [ '100.64.0.2:9417' ]
+      - targets: [ '100.64.0.2:8080' ]
         labels:
-          container: 'docker-exporter'
-          instance: 'crimsonserver'
+          container: 'cadvisor'
+          instance: 'crimsonserver''
