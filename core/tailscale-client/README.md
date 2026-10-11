@@ -17,22 +17,22 @@ Every other stack's `docker-compose.override.yml` in this repo exists to attach 
 
 ```text
 ┌─────────────────────────── Host Network Namespace ───────────────────────────┐
-│                                                                                │
-│   ┌───────────────────────┐        NET_ADMIN / SYS_MODULE / /dev/net/tun      │
+│                                                                              │
+│   ┌───────────────────────┐        NET_ADMIN / SYS_MODULE / /dev/net/tun     │
 │   │  tailscale container  │ ─────────────────────────────────────────────┐   │
 │   │  (network_mode: host) │                                              │   │
 │   └───────────┬───────────┘                                              │   │
 │               │ creates                                                  │   │
 │               ▼                                                          │   │
-│     [ tailscale0 tunnel interface ]  ── registers with ──▶  Headscale    │   │
-│               │                                             control server│  │
-│               │ 100.64.x.x                                                │   │
+│     [ tailscale0 tunnel interface ]  ── registers with ──▶  Headscale   │   │
+│               │                                            control server│   │
+│               │ 100.64.x.x                                               │   │
 │               ▼                                                          │   │
 │     Routable over the private tailnet mesh                               │   │
-│                                                                            │   │
+│                                                                          │   │
 │   (No Docker bridge network joined — Promtail reads logs via the host's  │   │
 │    own Docker socket, not via `monitoring_net`)                          │   │
-└────────────────────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Service Interconnections & Dependencies
