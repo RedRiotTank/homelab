@@ -8,23 +8,23 @@ The central observability backbone for the homelab: metrics collection (Promethe
 
 ```text
                          ┌─────────────────────────────┐
-                         │           Grafana            │
-                         │  (dashboards + datasources)  │
+                         │           Grafana           │
+                         │  (dashboards + datasources) │
                          └───────┬─────────┬───────────┘
                                  │         │        │
                    reads         │         │        │ reads
              ┌───────────────────┘         │        └───────────────────┐
-             ▼                              ▼                            ▼
-    ┌─────────────────┐           ┌─────────────────┐          ┌─────────────────┐
+             ▼                             ▼                            ▼
+    ┌───────────────────┐           ┌───────────────────┐          ┌───────────────────┐
     │    Prometheus     │           │   Alertmanager    │          │       Loki        │
     │  (metrics TSDB)   │──alerts──>│ (routing/notify)  │          │  (log storage)    │
     └───────┬───────────┘           └─────────┬─────────┘          └─────────┬─────────┘
-            │ scrapes (pull)                   │ default route                │ receives (push)
-   ┌────────┴─────────┐              ┌─────────▼─────────┐           ┌────────┴─────────┐
+            │ scrapes (pull)                  │ default route                │ receives (push)
+   ┌────────┴─────────┐              ┌────────▼───────────┐           ┌──────┴───────────┐
    ▼                  ▼              │ uncomplicated-     │           ▼                  ▼
-[node-exporter]   [cadvisor]         │ alert-receiver      │     [promtail]      [other stacks' Promtail
-   (local)          (local)          │ (webhook UI)        │     (local docker    sidecars via override,
-                                      └─────────────────────┘      containers)     e.g. adguard, backrest,
+[node-exporter]   [cadvisor]         │ alert-receiver     │     [promtail]      [other stacks' Promtail
+   (local)          (local)          │ (webhook UI)       │      (local docker    sidecars via override,
+                                     └────────────────────┘        containers)     e.g. adguard, backrest,
    ▼                  ▼                                                            headscale, proxy-stack,
 [node-exporter]   [cadvisor]  ◄── over Tailscale (100.64.x.x) ─── monitoring-agent-gpnc on remote/edge nodes
  @100.64.0.2       @100.64.0.2
