@@ -6,14 +6,14 @@ A lightweight, per-node telemetry agent (cAdvisor + Node Exporter + Promtail) de
 
 ```text
 ┌─────────────────────── Secondary/Edge Node (e.g. crimsonserver) ───────────────────────┐
-│                                                                                          │
-│   [ cadvisor-${NODE_HOSTNAME} ]  :8080  ──┐                                             │
-│   [ node-exporter-${NODE_HOSTNAME} ] :9100 ─┤  exposed on host ports, no 127.0.0.1 bind │
-│                                             │                                           │
-│   [ promtail-${NODE_HOSTNAME} ] ───────────┼──── pushes logs (LOKI_URL) ────────┐       │
-└─────────────────────────────────────────────┼───────────────────────────────────┼───────┘
-                                               │ scraped (pull)                    │ pushed
-                                               ▼ over Tailscale mesh (100.64.x.x)  ▼
+│                                                                                        │
+│   [ cadvisor-${NODE_HOSTNAME} ]  :8080  ────┐                                          │
+│   [ node-exporter-${NODE_HOSTNAME} ] :9100 ─┤  exposed on host ports, no 127.0.0.1 bind│
+│                                             │                                          │
+│   [ promtail-${NODE_HOSTNAME} ] ────────────┼─── pushes logs (LOKI_URL) ────────┐      │
+└─────────────────────────────────────────────┼───────────────────────────────────┼──────┘
+                                              │ scraped (pull)                    │ pushed
+                                              ▼ over Tailscale mesh (100.64.x.x)  ▼
                               ┌──────────────────────────────────────────────────────┐
                               │        monitoring-stack-gpnc (primary node)          │
                               │   Prometheus  ◄── scrapes  │  Loki  ◄── receives     │
