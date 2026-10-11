@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat)",
+      "Bash(sudo mv /tmp/monitoring-agent-gpnc-README.md /home/deployer/homelab/core/monitoring-agent-gpnc/README.md)",
+      "Bash(sudo chown root:root /home/deployer/homelab/core/monitoring-agent-gpnc/README.md)",
+      "Bash(sudo -n true)",
+      "Read(//tmp/**)"
+    ]
+  }
+}
