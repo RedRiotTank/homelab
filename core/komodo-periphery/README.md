@@ -25,7 +25,7 @@ Unlike the [primary Komodo stack](../komodo/README.md), this directory deploys a
    ┌──────────────────────────────────────┐
    │   komodo-periphery (this agent)      │
    │   listens on :8120                   │
-   └───────────────┬───────────────────────┘
+   └───────────────┬──────────────────────┘
                    │
          ┌─────────┴─────────┐
          ▼                   ▼
