@@ -1,0 +1,12 @@
+services:
+  adguardhome:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "adguard-stack"
+      logging: "promtail"
+
+networks:
+  monitoring_net:
+    external: true
+    name: monitoring
