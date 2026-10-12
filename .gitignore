@@ -36,6 +36,7 @@ custom-pages/
 **/conf/
 **/appdata/
 **/kitsunarr-data/
+**/vw-data/
 **/kitsunarr-secrets/
 **/qbit-config/
 **/config_backup_emergency/

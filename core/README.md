@@ -28,6 +28,7 @@ In short: if a new stack needs `proxy_net` or `monitoring_net` to be *reachable*
 | [monitoring-stack-gpnc](./monitoring-stack-gpnc/) | The central observability hub: Grafana, Prometheus, Loki, Alertmanager. Owns the `monitoring` network every other stack ships logs to, and pulls metrics from both local and remote exporters. |
 | [monitoring-agent-gpnc](./monitoring-agent-gpnc/) | The lightweight per-node counterpart (cAdvisor, Node Exporter, Promtail) deployed on secondary/edge nodes to feed the central monitoring stack over the VPN mesh. |
 | [backrest](./backrest/) | Restic-powered backup orchestrator. Has read-only visibility into every other stack's Docker volumes, `/opt`, `/srv`, and this Git repository, and ships snapshots to local or cloud storage. |
+| [vaultwarden](./vaultwarden/) | Self-hosted Bitwarden-compatible password manager. Stores every other credential (including the ones that guard the rest of `core/`) and serves the official Bitwarden clients. |
 
 ## Architecture & Node Topology
 
