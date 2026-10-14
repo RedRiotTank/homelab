@@ -12,15 +12,9 @@ services:
     volumes:
       - adguard_work:/opt/adguardhome/work
       - adguard_conf:/opt/adguardhome/conf
-    networks:
-      - proxy_net
 
 volumes:
   adguard_work:
     name: adguard_work
   adguard_conf:
     name: adguard_conf
-
-networks:
-  proxy_net:
-    external: true

@@ -1,0 +1,9 @@
+services:
+  grafana:
+    networks:
+      - monitoring
+      - proxy_net
+
+networks:
+  proxy_net:
+    external: true

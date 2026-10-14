@@ -38,15 +38,15 @@ Setup and local web UI ports (`ADGUARD_SETUP_PORT`, `ADGUARD_WEB_PORT`) are boun
 ## Service Interconnections & Dependencies
 
 - **[headscale](../headscale/README.md)** — VPN clients registered on the Headscale control server send DNS queries that arrive at AdGuard Source-NAT'd by the Docker gateway. Headscale's `config.yaml` should point its global nameserver at this stack's tunnel IP to enable MagicDNS resolution.
-- **[proxy-stack](../proxy-stack/README.md)** — Nginx Proxy Manager performs the actual TLS-terminated routing to backend services, reached over the shared external `proxy_net` network. AdGuard Home's web UI is itself exposed through this proxy.
+- **[proxy-stack](../proxy-stack/README.md)** — Nginx Proxy Manager performs the actual TLS-terminated routing to backend services, reached over the shared external `proxy_net` network, attached through `docker-compose.override.yml`. AdGuard Home's web UI is itself exposed through this proxy.
 - **[monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md)** — Container logs are shipped to the central Promtail/Loki pipeline via the external `monitoring_net` Docker network (actual network name: `monitoring`), attached through `docker-compose.override.yml`.
 
 ## File Structure
 
 | File | Purpose |
 | --- | --- |
-| `docker-compose.yml` | Base, portable service definition (image, volumes, `proxy_net` attachment, DNS/web ports). |
-| `docker-compose.override.yml` | Attaches the container to `monitoring_net` and injects Promtail logging labels. Optional. |
+| `docker-compose.yml` | Base, portable service definition (image, volumes, DNS/web ports). No network attachment — not reachable through the reverse proxy on its own. |
+| `docker-compose.override.yml` | Attaches the container to `proxy_net` (ingress) and `monitoring_net` (logging), and injects Promtail labels. **Not optional** — `proxy_net` lives here instead of the base file, so the dashboard isn't reachable via Nginx Proxy Manager without it. |
 | `.env.example` | Template for port-binding environment variables. |
 
 ## Configuration & Environment Variables
@@ -82,7 +82,7 @@ docker network create proxy_net
 
 1. Add this repository to your Komodo instance.
 2. Set the environment variables in the Komodo UI based on the `.env.example` structure.
-3. In "File Paths", list both `docker-compose.yml` and `docker-compose.override.yml` (if using monitoring). The override is entirely optional — omit it if the monitoring stack isn't deployed.
+3. In "File Paths", list **both** `docker-compose.yml` and `docker-compose.override.yml` — the override carries the `proxy_net` attachment, so it's required for the dashboard to be reachable via the reverse proxy. If the monitoring stack isn't deployed, edit the override to drop the `monitoring_net` entry and the two `logging*` labels rather than omitting the file.
 4. Click Deploy.
 
 **Option B: Manual CLI Deployment**
@@ -93,11 +93,7 @@ nano .env
 docker compose up -d
 ```
 
-To run without the monitoring override, explicitly target the base file:
-
-```bash
-docker compose -f docker-compose.yml up -d
-```
+Compose automatically merges `docker-compose.override.yml` on top of `docker-compose.yml`, so a plain `docker compose up -d` picks up both — running `-f docker-compose.yml` alone leaves the container off `proxy_net` and unreachable via the reverse proxy.
 
 ### 4. Verify
 

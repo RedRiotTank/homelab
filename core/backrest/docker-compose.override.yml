@@ -1,12 +1,15 @@
 services:
   backrest:
     networks:
+      - proxy_net
       - monitoring_net
     labels:
       logging_jobname: "backrest-stack"
       logging: "promtail"
 
 networks:
+  proxy_net:
+    external: true
   monitoring_net:
     external: true
     name: monitoring

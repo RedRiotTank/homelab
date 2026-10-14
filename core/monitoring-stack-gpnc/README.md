@@ -33,7 +33,16 @@ The central observability backbone for the homelab: metrics collection (Promethe
 
 ### Shared `monitoring` network
 
-All services here join a single external Docker network literally named `monitoring`. This is the same network every other stack's `docker-compose.override.yml` attaches to (as `monitoring_net`) in order to let Promtail discover their containers and ship logs here. This stack does not need its own override file — it *is* the hub the other stacks' overrides connect to.
+All services here join a single Docker network literally named `monitoring`, created by this stack's own `docker-compose.yml` (not `external`, since this is the owning stack — every other stack references it `external: true` as `monitoring_net`).
+
+Despite the name, joining `monitoring`/`monitoring_net` is **not** what makes Promtail or Prometheus pick up another stack's container:
+
+- **Promtail** discovers every container through the mounted Docker socket (`docker_sd_configs` in `configs/promtail/promtail.yaml`) and reads its log files straight off disk — it never talks to the target container over the network. What actually routes a container's logs correctly is the `logging` / `logging_jobname` **labels**, not network membership.
+- **Prometheus** only scrapes the exact targets listed in `configs/prometheus/prometheus.yml` (`prometheus`, `alertmanager`, `node-exporter`, `cadvisor`, local and the remote-node targets over Tailscale). It never scrapes adguard, backrest, vaultwarden, headscale, komodo, or any other app container, regardless of which network they're on.
+
+So for every other stack in this repository, attaching to `monitoring_net` is effectively decorative for telemetry purposes — harmless to keep (e.g. useful for `docker exec <container> curl http://loki:3100/ready` while debugging), but it is the `logging`/`logging_jobname` labels alone that make Promtail ship a container's logs, not the network attachment.
+
+This stack **does** ship its own `docker-compose.override.yml`, but for a different reason than everyone else's: it attaches `grafana` (only) to `proxy_net`, so the dashboard can be reverse-proxied by [proxy-stack](../proxy-stack/README.md) under a custom domain instead of, or in addition to, its direct host port. `prometheus`, `alertmanager`, `redis`, and the rest intentionally stay off `proxy_net` — see [Configuration & Environment Variables](#configuration--environment-variables) for their loopback-binding options instead.
 
 ### Pull metrics locally, pull metrics remotely, push logs everywhere
 
@@ -58,9 +67,9 @@ This is the stack every other service ships telemetry to. Services that attach t
 - [adguard](../adguard/README.md) — ships container logs via Promtail labels.
 - [backrest](../backrest/README.md) — ships container logs via Promtail labels.
 - [headscale](../headscale/README.md) — ships container logs via Promtail labels.
-- [proxy-stack](../proxy-stack/README.md) — ships container logs via Promtail labels.
+- [proxy-stack](../proxy-stack/README.md) — ships container logs via Promtail labels; also the other direction of this relationship — this stack's own `docker-compose.override.yml` attaches `grafana` to proxy-stack's external `proxy_net` network, so the dashboard can be reverse-proxied under a custom domain.
 - [tailscale-client](../tailscale-client/README.md) — labels only (runs in `network_mode: host`, so it cannot join `monitoring_net`; labels are still read by the local Promtail instance on that host).
-- [komodo](../komodo/README.md) — optionally joins both `proxy_net` and `monitoring_net` via its own host-managed override example.
+- [komodo](../komodo/README.md) — joins both `proxy_net` and `monitoring_net` via its own committed `docker-compose.override.yml`.
 - [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) — remote/edge-node counterpart; its `node-exporter`/`cadvisor` are scraped by this stack's Prometheus over Tailscale, and its Promtail pushes logs directly to this stack's Loki via `LOKI_URL`.
 
 ## File Structure
@@ -69,6 +78,7 @@ This is the stack every other service ships telemetry to. Services that attach t
 monitoring-stack-gpnc/
 ├── docker-compose.yml        # grafana, prometheus, cadvisor, node-exporter,
 │                              # alertmanager, uncomplicated-alert-receiver, redis, loki, promtail
+├── docker-compose.override.yml # optional: attaches grafana to proxy_net for reverse-proxy ingress
 ├── .env.example               # versions, domains, resource limits, optional port bindings
 ├── Makefile                   # make up / clean / logs / open shortcuts
 ├── LICENSE                    # original MIT license (Ruan Bekker)
@@ -126,7 +136,14 @@ nano .env
 
 Ensure `GRAFANA_DOMAIN` and `GRAFANA_ROOT_URL` are correctly set to match your reverse proxy configuration.
 
-### 3. Start the stack
+### 3. Optional: reverse-proxy ingress for Grafana
+
+`docker-compose.override.yml` attaches `grafana` to the external `proxy_net` network so it can sit behind [proxy-stack](../proxy-stack/README.md) instead of, or alongside, its direct host port. This is the only service affected — the rest of the stack is unaffected either way.
+
+- **Using it:** make sure `proxy_net` already exists (`docker network create proxy_net`, usually already created by proxy-stack) before `docker compose up -d` — Compose merges the override automatically.
+- **Not using it:** delete the override file, or run `docker compose -f docker-compose.yml up -d` explicitly, and reach Grafana via its direct host port instead.
+
+### 4. Start the stack
 
 ```bash
 docker compose up -d
@@ -141,7 +158,7 @@ make clean   # docker compose down
 make open    # opens http://localhost:3000/ (Grafana)
 ```
 
-### 4. Verify the deployment
+### 5. Verify the deployment
 
 - **Grafana datasources:** `http://<host>:3000` (or your domain) → Connections → Data sources. Prometheus, Alertmanager, and Loki should all show green/working.
 - **Prometheus targets:** `http://<host>:9090/targets` → confirm `prometheus`, `alertmanager`, `node-exporter` (local + `crimsonserver`), and `cadvisor` (local + `crimsonserver`) are all `UP`.

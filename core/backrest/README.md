@@ -35,15 +35,15 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 
 ## Service Interconnections & Dependencies
 
-- [proxy-stack](../proxy-stack/README.md) — Backrest exposes no public ports; it sits behind Nginx Proxy Manager and is reached over the shared external `proxy_net` network.
+- [proxy-stack](../proxy-stack/README.md) — Backrest exposes no public ports; it sits behind Nginx Proxy Manager and is reached over the shared external `proxy_net` network, attached through `docker-compose.override.yml`.
 - [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md) — `docker-compose.override.yml` attaches the container to the external `monitoring_net` network (the real Docker network name is `monitoring`) and injects `logging`/`logging_jobname` labels so Promtail can ship its logs to Loki.
 
 ## File Structure
 
 | File | Purpose |
 | --- | --- |
-| `docker-compose.yml` | Base, portable service definition (image, volumes, `proxy_net` attachment). |
-| `docker-compose.override.yml` | Optional host-specific layer that attaches the container to `monitoring_net` for log shipping. |
+| `docker-compose.yml` | Base, portable service definition (image, volumes). No network attachment — not reachable through the reverse proxy on its own. |
+| `docker-compose.override.yml` | Attaches the container to `proxy_net` (ingress) and `monitoring_net` (logging), and injects Promtail labels. **Not optional** — `proxy_net` lives here instead of the base file, so the UI isn't reachable via Nginx Proxy Manager without it. |
 | `.env.example` | Template for all environment variables consumed by `docker-compose.yml`. |
 
 ## Configuration & Environment Variables
@@ -79,7 +79,7 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 
 1. Register this directory as a stack in your Komodo instance.
 2. Define the environment variables following `.env.example`.
-3. In **File Paths**, specify `docker-compose.yml` (and `docker-compose.override.yml` if using the monitoring network — see [Service Interconnections & Dependencies](#service-interconnections--dependencies)). The override is entirely optional: omit it from the File Paths list if the monitoring stack isn't deployed.
+3. In **File Paths**, specify **both** `docker-compose.yml` and `docker-compose.override.yml` — the override carries the `proxy_net` attachment, so it's required for the UI to be reachable via the reverse proxy. If the monitoring stack isn't deployed, edit the override to drop the `monitoring_net` entry and the two `logging*` labels rather than omitting the file.
 4. Deploy the stack.
 
 ### Option B: Manual CLI Deployment
@@ -93,7 +93,7 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 
        docker compose up -d
 
-   To run without the monitoring override: `docker compose -f docker-compose.yml up -d`.
+   Compose automatically merges `docker-compose.override.yml` on top of `docker-compose.yml`, so a plain `docker compose up -d` picks up both — running `-f docker-compose.yml` alone leaves the container off `proxy_net` and unreachable via the reverse proxy.
 
 ### Post-Deployment Access & Initialization
 

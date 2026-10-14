@@ -32,8 +32,6 @@ services:
 
       # Destination storage repository (read-write for snapshots)
       - "${BACKREST_REPO_DIR:-/mnt/backups}:/repos/external:rw"
-    networks:
-      - proxy_net
 
 volumes:
   backrest_data:
@@ -44,7 +42,3 @@ volumes:
     name: backrest_cache
   backrest_tmp:
     name: backrest_tmp
-
-networks:
-  proxy_net:
-    external: true

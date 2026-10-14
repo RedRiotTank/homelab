@@ -32,10 +32,10 @@ The `/admin` diagnostics and user-management panel is gated behind `ADMIN_TOKEN`
 | File | Purpose |
 | --- | --- |
 | `docker-compose.yml` | Base, portable service definition (image, environment, bind-mounted data volume). No network attachment and no published port — not reachable on its own. |
-| `docker-compose.override.yml` | Attaches the container to **both** `proxy_net` (ingress) and `monitoring_net` (logging) and injects Promtail logging labels. **Not optional** — unlike other `core/` stacks, this file is required for the service to be reachable at all, since `proxy_net` lives here instead of the base file. |
+| `docker-compose.override.yml` | Attaches the container to **both** `proxy_net` (ingress) and `monitoring_net` (logging) and injects Promtail logging labels. **Not optional** — this file is required for the service to be reachable at all, since `proxy_net` lives here instead of the base file. |
 | `.env.example` | Template for all environment variables consumed by `docker-compose.yml`. |
 
-> **Deviation from other `core/` stacks:** everywhere else in this repo, `proxy_net` lives in the base `docker-compose.yml` and only `monitoring_net` is in the override. For Vaultwarden, both networks live in the override so the base file stays fully network-agnostic. If the monitoring stack isn't deployed on this host, don't omit the whole override — instead edit it to drop the `monitoring_net` entry and the two `logging*` labels, keeping `proxy_net`.
+> **Consistent with the rest of `core/`:** like [adguard](../adguard/README.md), [backrest](../backrest/README.md), [headscale](../headscale/README.md), and [komodo](../komodo/README.md), `proxy_net` lives in the override here, not the base `docker-compose.yml` — the base file stays fully network-agnostic. [proxy-stack](../proxy-stack/README.md) is the sole exception, since NPM being on `proxy_net` is its core function rather than an optional cross-stack add-on. If the monitoring stack isn't deployed on this host, don't omit the whole override — instead edit it to drop the `monitoring_net` entry and the two `logging*` labels, keeping `proxy_net`.
 
 ## Configuration & Environment Variables
 
