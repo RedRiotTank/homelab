@@ -52,8 +52,8 @@ services:
       - ${PANEL_NGINX_DIR:-/opt/compose/pterodactyl/panel/nginx}:/etc/nginx/http.d
       - ${PANEL_CERTS_DIR:-/opt/compose/pterodactyl/panel/certs}:/etc/letsencrypt
       - ${PANEL_LOGS_DIR:-/opt/compose/pterodactyl/panel/logs}:/app/storage/logs
-    # ports:
-    #   - "${PANEL_PORT:-127.0.0.1:8081}:80"  # Not published: reached via proxy_net through Nginx Proxy Manager, not a host port. Uncomment only for local/debug access.
+    ports:
+      - "${PANEL_PORT:-127.0.0.1:8081}:80"
     depends_on:
       - database
       - cache
