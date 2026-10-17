@@ -1,0 +1,88 @@
+services:
+  database:
+    image: mariadb:${MARIADB_VERSION:-11}
+    container_name: pterodactyl-database
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_DATABASE=${DB_DATABASE:-panel}
+      - MYSQL_USER=${DB_USERNAME:-pterodactyl}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+    volumes:
+      - ${DATABASE_DATA_DIR:-/opt/compose/pterodactyl/database/data}:/var/lib/mysql
+
+  cache:
+    image: redis:${REDIS_VERSION:-alpine}
+    container_name: pterodactyl-cache
+    restart: unless-stopped
+    volumes:
+      - ${CACHE_DATA_DIR:-/opt/compose/pterodactyl/cache/data}:/data
+
+  panel:
+    image: ghcr.io/pterodactyl/panel:${PANEL_VERSION:-latest}
+    container_name: pterodactyl-panel
+    restart: unless-stopped
+    environment:
+      - APP_URL=${APP_URL}
+      - APP_TIMEZONE=${TZ:-Europe/Madrid}
+      - APP_SERVICE_AUTHOR=${APP_SERVICE_AUTHOR}
+      - APP_ENV=production
+      - APP_ENVIRONMENT_ONLY=false
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:-*}
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_DRIVER=redis
+      - REDIS_HOST=cache
+      - DB_HOST=database
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-panel}
+      - DB_USERNAME=${DB_USERNAME:-pterodactyl}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - HASHIDS_LENGTH=${HASHIDS_LENGTH:-8}
+      - MAIL_FROM=${MAIL_FROM:-noreply@example.com}
+      - MAIL_DRIVER=${MAIL_DRIVER:-log}
+      - MAIL_HOST=${MAIL_HOST:-mail}
+      - MAIL_PORT=${MAIL_PORT:-1025}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_ENCRYPTION=${MAIL_ENCRYPTION:-true}
+    volumes:
+      - ${PANEL_VAR_DIR:-/opt/compose/pterodactyl/panel/var}:/app/var
+      - ${PANEL_NGINX_DIR:-/opt/compose/pterodactyl/panel/nginx}:/etc/nginx/http.d
+      - ${PANEL_CERTS_DIR:-/opt/compose/pterodactyl/panel/certs}:/etc/letsencrypt
+      - ${PANEL_LOGS_DIR:-/opt/compose/pterodactyl/panel/logs}:/app/storage/logs
+    # ports:
+    #   - "${PANEL_PORT:-127.0.0.1:8081}:80"  # Not published: reached via proxy_net through Nginx Proxy Manager, not a host port. Uncomment only for local/debug access.
+    depends_on:
+      - database
+      - cache
+
+  wings:
+    image: ghcr.io/pterodactyl/wings:${WINGS_VERSION:-latest}
+    container_name: pterodactyl-wings
+    restart: unless-stopped
+    tty: true
+    environment:
+      - TZ=${TZ:-Europe/Madrid}
+      - WINGS_UID=${WINGS_UID:-988}
+      - WINGS_GID=${WINGS_GID:-988}
+      - WINGS_USERNAME=${WINGS_USERNAME:-pterodactyl}
+    ports:
+      - "${WINGS_API_PORT:-8080}:8080"
+      - "${WINGS_SFTP_PORT:-2022}:2022"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers/:/var/lib/docker/containers/
+      - ${WINGS_ETC_DIR:-/opt/compose/pterodactyl/wings/etc}:/etc/pterodactyl
+      # WINGS_DATA_DIR is intentionally mounted host-path-to-itself (not remapped to /var/lib/pterodactyl):
+      # Wings talks to the HOST's Docker daemon via the socket above to spawn game-server containers directly
+      # on the host, so the path it writes to inside this container must be the exact same path the host (and
+      # therefore the sibling server containers) sees. This must match `system.data` in config.yml exactly.
+      - ${WINGS_DATA_DIR:-/opt/compose/pterodactyl/wings/data}:${WINGS_DATA_DIR:-/opt/compose/pterodactyl/wings/data}
+      - ${WINGS_LOGS_DIR:-/opt/compose/pterodactyl/wings/logs}:/var/log/pterodactyl
+      # Same host-path-to-itself requirement as WINGS_DATA_DIR above: used as a bind mount source for the
+      # transient installer containers Wings spawns when installing/reinstalling a server.
+      - ${WINGS_TMP_DIR:-/opt/compose/pterodactyl/wings/tmp}:${WINGS_TMP_DIR:-/opt/compose/pterodactyl/wings/tmp}
+      - ${WINGS_RUN_DIR:-/opt/compose/pterodactyl/wings/run}:/run/wings
+      - /etc/ssl/certs:/etc/ssl/certs:ro

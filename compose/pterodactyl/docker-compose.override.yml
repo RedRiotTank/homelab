@@ -1,0 +1,36 @@
+services:
+  panel:
+    networks:
+      - proxy_net
+      - monitoring_net
+    labels:
+      logging_jobname: "pterodactyl-panel"
+      logging: "promtail"
+
+  wings:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "pterodactyl-wings"
+      logging: "promtail"
+
+  database:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "pterodactyl-database"
+      logging: "promtail"
+
+  cache:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "pterodactyl-cache"
+      logging: "promtail"
+
+networks:
+  proxy_net:
+    external: true
+  monitoring_net:
+    external: true
+    name: monitoring
