@@ -1,0 +1,22 @@
+services:
+  romm:
+    networks:
+      - proxy_net
+      - monitoring_net
+    labels:
+      logging_jobname: "romm-stack"
+      logging: "promtail"
+
+  romm-db:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "romm-db"
+      logging: "promtail"
+
+networks:
+  proxy_net:
+    external: true
+  monitoring_net:
+    external: true
+    name: monitoring
