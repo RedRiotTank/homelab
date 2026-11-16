@@ -6,9 +6,11 @@ A containerized and secure deployment of RomM, serving as a unified retro gaming
 
 - **`docker-compose.yml`**: The core, portable configuration for RomM and its MariaDB database.
 - **`.env.example`**: Template for required environment variables.
-- **`library/`**: Directory containing the actual ROM files (ignored by Git).
-- **`database/`**: Directory for MariaDB database persistence (ignored by Git).
-- **`assets/`, `config/`, `resources/`**: Directories for RomM internal configuration and downloaded metadata/cover art (ignored by Git).
+- **`build_library.py`**: Genera la biblioteca de RomM desde el montaje rclone y las carátulas de comunidad (ver [BUILD_LIBRARY.md](BUILD_LIBRARY.md)).
+- **`config.example.yml`**: Configuración de RomM para usar el `gamelist.xml` local y no leer las ROMs al escanear.
+- **`ROMM_LIBRARY_DIR/`**: Biblioteca generada (symlinks + gamelist + covers, ignorada por Git).
+- **`RETRO_DATA_DIR/database`**: Directorio para MariaDB (ignorado por Git).
+- **`RETRO_DATA_DIR/assets`, `config`, `resources`**: Datos internos de RomM y carátulas copiadas (ignorados por Git).
 
 ## Setup & Deployment
 
@@ -20,7 +22,11 @@ cp .env.example .env
 nano .env
 ```
 
-Ensure you set strong database passwords, your `STEAMGRIDDB_API_KEY` for metadata scraping, and correctly map `ROM_LIBRARY_DIR` to your physical game storage.
+Ensure you set strong database passwords and `ROMM_LIBRARY_DIR`. For the rclone
+library, set `RCLONE_MOUNT_DIR=/mnt/media` and generate the tree with
+`build_library.py` (see [BUILD_LIBRARY.md](BUILD_LIBRARY.md)). **Do not set
+`SCREENSCRAPER_USER`/`SCREENSCRAPER_PASSWORD`** if you want to use only the
+local `gamelist.xml` covers.
 
 ### 2. Configure Local Monitoring (Optional)
 
@@ -51,6 +57,13 @@ docker-compose --env-file .env up -d
 ```
 
 The service will be accessible locally at the port defined in your `.env` file (default `8082`).
+
+### 4. Generar la biblioteca desde rclone
+
+Sigue [BUILD_LIBRARY.md](BUILD_LIBRARY.md). El compose monta:
+
+- `ROMM_LIBRARY_DIR` -> `/romm/library/roms`
+- `RCLONE_MOUNT_DIR` -> `/mnt/media` (para los symlinks)
 
 ## Backups & Disaster Recovery
 

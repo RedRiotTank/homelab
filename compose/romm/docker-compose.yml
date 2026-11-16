@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   romm:
     image: rommapp/romm:latest
@@ -13,16 +11,18 @@ services:
       - ROMM_AUTH_SECRET_KEY=${ROMM_AUTH_SECRET_KEY:-${ROMM_SECRET_KEY}}
       - IGNORE_AUTH=${IGNORE_AUTH}
       - STEAMGRIDDB_API_KEY=${STEAMGRIDDB_API_KEY}
-      - SCREENSCRAPER_USER=${SCREENSCRAPER_USER}
-      - SCREENSCRAPER_PASSWORD=${SCREENSCRAPER_PASSWORD}
+      # Sin ScreenScraper: la metadata y las caratulas salen del gamelist.xml local
       - ROMM_BASE_URL=${ROMM_BASE_URL}
     ports:
-      - "${ROMM_PORT}:8080"
+      - "${ROMM_PORT:-8082}:8080"
     volumes:
-      - ${RETRO_DATA_DIR}/resources:/romm/resources
-      - ${ROM_LIBRARY_DIR}:/romm/library/roms
-      - ${RETRO_DATA_DIR}/assets:/romm/assets
-      - ${RETRO_DATA_DIR}/config:/romm/config
+      - ${RETRO_DATA_DIR:-/opt/compose/romm}/resources:/romm/resources
+      # Biblioteca generada: symlinks a las ROMs del rclone + gamelist.xml/covers
+      - ${ROMM_LIBRARY_DIR:-/opt/compose/romm/library}:/romm/library/roms
+      # Montaje completo del rclone: los symlinks apuntan a /mnt/media/...
+      - ${RCLONE_MOUNT_DIR:-/mnt/media}:/mnt/media:ro
+      - ${RETRO_DATA_DIR:-/opt/compose/romm}/assets:/romm/assets
+      - ${RETRO_DATA_DIR:-/opt/compose/romm}/config:/romm/config
     depends_on:
       - romm-db
     networks:
@@ -38,7 +38,7 @@ services:
       - MARIADB_USER=${DB_USER}
       - MARIADB_PASSWORD=${DB_PASSWORD}
     volumes:
-      - ${RETRO_DATA_DIR}/database:/var/lib/mysql
+      - ${RETRO_DATA_DIR:-/opt/compose/romm}/database:/var/lib/mysql
     networks:
       - retro-internal
 

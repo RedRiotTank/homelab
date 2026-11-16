@@ -1,0 +1,20 @@
+# Configuracion recomendada para la biblioteca generada desde el rclone.
+# Copiar a ${RETRO_DATA_DIR}/config/config.yml en el host.
+filesystem:
+  # No leer las ROMs para calcular hashes: con el gamelist no hace falta y
+  # leer 29 GB desde Usenet al escanear seria muy lento.
+  skip_hash_calculation: true
+  skip_title_id_extraction: true
+
+scan:
+  # La metadata y las caratulas salen del gamelist.xml/covers locales.
+  # Sin ScreenScraper/IGDB configurados, el escaneo no hace peticiones externas.
+  priority:
+    metadata:
+      - gamelist
+    artwork:
+      - gamelist
+  media:
+    - box2d
+  gamelist:
+    export: false
