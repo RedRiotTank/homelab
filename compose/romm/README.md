@@ -7,6 +7,7 @@ A containerized and secure deployment of RomM, serving as a unified retro gaming
 - **`docker-compose.yml`**: The core, portable configuration for RomM and its MariaDB database.
 - **`.env.example`**: Template for required environment variables.
 - **`build_library.py`**: Builds the RomM library from the rclone mount and the community covers (see [BUILD_LIBRARY.md](BUILD_LIBRARY.md)).
+- **`sync_covers.py`**: Mirrors the classifier-assigned covers into the local cover store before the library is rebuilt.
 - **`config.example.yml`**: RomM configuration to use the local `gamelist.xml` and avoid reading the ROMs while scanning.
 - **`ROMM_LIBRARY_DIR/`**: Generated library (symlinks + gamelist + covers, ignored by Git).
 - **`RETRO_DATA_DIR/database`**: MariaDB data directory (ignored by Git).

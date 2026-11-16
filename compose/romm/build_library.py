@@ -133,6 +133,7 @@ def build_platform(
     roms_root: Path,
     roms_target: str,
     out: Path,
+    remote: dict[str, dict],
 ) -> int:
     slug = PLATFORMS[display][0]
     rclone_folder = RCLONE_FOLDERS.get(display, display)
@@ -167,6 +168,11 @@ def build_platform(
 
     for filename in source_files:
         hit = metadata.get(filename, {})
+        remote_hit = remote.get(filename)
+        if remote_hit and remote_hit.get("platform") == display:
+            # The curated import metadata wins; the classifier catalog fills
+            # the gaps for games uploaded through the normal path.
+            hit = {**remote_hit, **hit}
         stem = Path(filename).stem
         target = slug_dir / filename
         try:
@@ -246,6 +252,15 @@ def main() -> None:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
+    remote: dict[str, dict] = {}
+    remote_path = src / "remote-games.json"
+    if remote_path.exists():
+        try:
+            remote = json.loads(remote_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            print(f"WARN: {remote_path} is not valid JSON, ignoring it", file=sys.stderr)
+            remote = {}
+
     if args.platforms:
         selected = [p.strip() for p in args.platforms.split(",") if p.strip()]
     else:
@@ -261,7 +276,7 @@ def main() -> None:
             import shutil
             shutil.rmtree(out / slug, ignore_errors=True)
         total += build_platform(
-            display, args, src, normalized, roms_root, args.roms_target, out
+            display, args, src, normalized, roms_root, args.roms_target, out, remote
         )
     print(f"TOTAL: {total} games")
 

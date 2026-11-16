@@ -62,13 +62,50 @@ re-encoding the covers that still exist:
 This is the normal mode for updating the library after deleting games. `--clean`
 is only needed for a full rebuild from scratch.
 
+## Covers for games uploaded outside the bulk import
+
+Games uploaded through the normal path (web upload or a plain `rclone copy`)
+get their metadata and cover from the classifier (RAWG today, ScreenScraper or
+another provider later). The app stores the cover as a URL in `nzbs.poster_url`,
+not as a local file, so that cover is **not** in the rclone mount and RomM would
+show a placeholder.
+
+`sync_covers.py` fixes that. It asks the community for the classified cover list
+(`GET /api/rclone/game-covers`), downloads every cover that is not already in
+the bulk-import catalog, converts it to a 512 px WebP and stores it next to the
+import covers:
+
+```text
+/srv/roms/game-import/covers/<hash>.webp
+/srv/roms/game-import/remote-games.json   (filename -> platform/title/year/cover)
+```
+
+`build_library.py` reads `remote-games.json` and uses it for the games that have
+no normalized manifest entry. Curated import metadata always wins.
+
+Run it before the prune:
+
+```bash
+docker run --rm --entrypoint sh \
+  -e COMMUNITY_API_KEY=... \
+  -v /home/deployer/homelab/compose/romm:/work:ro \
+  -v /srv/roms/game-import:/catalog \
+  rommapp/romm:latest \
+  -c '/src/.venv/bin/python /work/sync_covers.py \
+        --api-url https://comunidad.respaldame.org --work /catalog'
+```
+
+It is incremental: a cover whose URL did not change is skipped, and games that
+already have a curated import cover are ignored. The provider does not matter:
+whatever URL the classifier wrote is what gets mirrored locally.
+
 ## Scheduled rescan
 
 RomM does not notice changes in the mount by itself: its library is the
-generated tree. For a scheduled scan to be useful, prune first:
+generated tree. For a scheduled scan to be useful, sync covers and prune first:
 
 ```text
-build_library.py --prune  ->  RomM quick scan
+sync_covers.py -> build_library.py --prune -> RomM quick scan
 ```
 
 The schedule **does not belong in this repository**: each server defines it in
