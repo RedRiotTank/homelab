@@ -62,6 +62,26 @@ las caratulas que siguen existiendo:
 Es el modo normal para actualizar la biblioteca tras borrar juegos. `--clean`
 solo hace falta para reconstruir desde cero.
 
+## Reescaneo programado
+
+RomM no ve los cambios del montaje por si solo: su biblioteca es el arbol
+generado. Para que un escaneo programado sirva de algo, hay que podar antes:
+
+```text
+build_library.py --prune  ->  escaneo Quick de RomM
+```
+
+La programacion **no va en este repositorio**: cada servidor la define en su
+propio `.env` (`ENABLE_SCHEDULED_RESCAN`, `SCHEDULED_RESCAN_CRON`) y, si quiere
+podar automaticamente, en su propio cron/systemd. Los valores por defecto del
+compose son reescaneo desactivado y `0 3 * * *`.
+
+Ejemplo de cron de usuario para podar antes del escaneo:
+
+```cron
+45 7 * * 4 /ruta/al/romm-library-sync.sh >> /ruta/al/log 2>&1
+```
+
 ## Configuracion de RomM
 
 Copiar `config.example.yml` a `${RETRO_DATA_DIR}/config/config.yml` (o dejar el

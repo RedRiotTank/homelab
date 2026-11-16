@@ -13,6 +13,11 @@ services:
       - STEAMGRIDDB_API_KEY=${STEAMGRIDDB_API_KEY}
       # Sin ScreenScraper: la metadata y las caratulas salen del gamelist.xml local
       - ROMM_BASE_URL=${ROMM_BASE_URL}
+      # Zona horaria del contenedor (los cron de RomM usan esta hora local)
+      - TZ=${TZ:-UTC}
+      # Reescaneo programado: cada servidor decide si lo activa y cuando
+      - ENABLE_SCHEDULED_RESCAN=${ENABLE_SCHEDULED_RESCAN:-false}
+      - SCHEDULED_RESCAN_CRON=${SCHEDULED_RESCAN_CRON:-0 3 * * *}
     ports:
       - "${ROMM_PORT:-8082}:8080"
     volumes:
