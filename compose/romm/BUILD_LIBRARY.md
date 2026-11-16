@@ -1,30 +1,30 @@
-# Biblioteca RomM desde el rclone de comunidad
+# RomM library from the community rclone mount
 
-RomM no puede leer las caratulas del rclone porque **no estan dentro del montaje**:
-el montaje `community:` solo expone las ROMs. Las caratulas viven en la app de
-comunidad y se sirven por `/api/covers/<hash>.webp`.
+RomM cannot read the rclone covers because **they are not inside the mount**:
+the `community:` mount only exposes the ROMs. Covers live in the community app
+and are served at `/api/covers/<hash>.webp`.
 
-La solucion es generar una capa local compatible con RomM:
+The solution is to generate a local layer that RomM understands:
 
 ```text
 /opt/compose/romm/library/
   gba/
-    Juego.gba        -> symlink a /mnt/media/Juegos/Retro/Game Boy Advance/Juego.gba
-    gamelist.xml      -> titulo, año, descripcion, genero, cover...
-    covers/Juego.png  -> caratula local
+    Game.gba          -> symlink to /mnt/media/Juegos/Retro/Game Boy Advance/Game.gba
+    gamelist.xml      -> title, year, description, genre, cover...
+    covers/Game.png   -> local cover
 ```
 
-RomM lee `gamelist.xml` + `covers/` y el validador de rutas de RomM permite
-symlinks. El compose monta:
+RomM reads `gamelist.xml` + `covers/`, and its path validator allows symlinks.
+The compose file mounts:
 
 - `/opt/compose/romm/library` -> `/romm/library/roms`
-- `/mnt/media` -> `/mnt/media` (para que resuelvan los symlinks)
+- `/mnt/media` -> `/mnt/media` (so the symlinks resolve)
 
-## Generar / actualizar
+## Build / update
 
-El generador usa `/srv/roms/game-import` (manifest/caratulas de la importacion
-de comunidad) y el montaje rclone. Se ejecuta con la imagen de RomM, que ya
-trae Python y Pillow:
+The builder uses `/srv/roms/game-import` (manifest/covers from the community
+import) and the rclone mount. It runs with the RomM image, which already ships
+Python and Pillow:
 
 ```bash
 docker run --rm --entrypoint sh \
@@ -40,72 +40,72 @@ docker run --rm --entrypoint sh \
         --out /out/library --clean'
 ```
 
-Importante: montar el catalogo en `/catalog`, **no en `/src`**, porque `/src`
-es el codigo y el venv de la imagen de RomM.
+Important: mount the catalog at `/catalog`, **not at `/src`**, because `/src`
+is the RomM image code and virtualenv.
 
-Para probar una sola plataforma:
+To test a single platform:
 
 ```bash
 ... --platforms "Atari 800"
 ```
 
-## Podar juegos borrados
+## Prune deleted games
 
-Cuando un juego desaparece del catalogo, sus symlinks y caratulas quedan
-huerfanos. `--prune` los elimina y regenera el `gamelist.xml` sin reconvertir
-las caratulas que siguen existiendo:
+When a game disappears from the catalog, its symlinks and covers are left
+behind. `--prune` removes them and regenerates `gamelist.xml` without
+re-encoding the covers that still exist:
 
 ```bash
 ... --out /out/library --prune
 ```
 
-Es el modo normal para actualizar la biblioteca tras borrar juegos. `--clean`
-solo hace falta para reconstruir desde cero.
+This is the normal mode for updating the library after deleting games. `--clean`
+is only needed for a full rebuild from scratch.
 
-## Reescaneo programado
+## Scheduled rescan
 
-RomM no ve los cambios del montaje por si solo: su biblioteca es el arbol
-generado. Para que un escaneo programado sirva de algo, hay que podar antes:
+RomM does not notice changes in the mount by itself: its library is the
+generated tree. For a scheduled scan to be useful, prune first:
 
 ```text
-build_library.py --prune  ->  escaneo Quick de RomM
+build_library.py --prune  ->  RomM quick scan
 ```
 
-La programacion **no va en este repositorio**: cada servidor la define en su
-propio `.env` (`ENABLE_SCHEDULED_RESCAN`, `SCHEDULED_RESCAN_CRON`) y, si quiere
-podar automaticamente, en su propio cron/systemd. Los valores por defecto del
-compose son reescaneo desactivado y `0 3 * * *`.
+The schedule **does not belong in this repository**: each server defines it in
+its own `.env` (`ENABLE_SCHEDULED_RESCAN`, `SCHEDULED_RESCAN_CRON`) and, if it
+wants automatic pruning, in its own cron/systemd. The compose defaults are
+rescan disabled and `0 3 * * *`.
 
-Ejemplo de cron de usuario para podar antes del escaneo:
+Example user cron entry to prune before the scan:
 
 ```cron
-45 7 * * 4 /ruta/al/romm-library-sync.sh >> /ruta/al/log 2>&1
+45 7 * * 4 /path/to/romm-library-sync.sh >> /path/to/log 2>&1
 ```
 
-## Configuracion de RomM
+## RomM configuration
 
-Copiar `config.example.yml` a `${RETRO_DATA_DIR}/config/config.yml` (o dejar el
-que ya existe) y reiniciar RomM. Lo importante:
+Copy `config.example.yml` to `${RETRO_DATA_DIR}/config/config.yml` (or keep the
+existing one) and restart RomM. The important parts:
 
 - `filesystem.skip_hash_calculation: true`
-- prioridad `gamelist` para metadata y artwork
+- `gamelist` priority for metadata and artwork
 - `scan.media: [box2d]`
-- sin `SCREENSCRAPER_USER/PASSWORD` en el entorno
+- no `SCREENSCRAPER_USER/PASSWORD` in the environment
 
-## Escanear
+## Scan
 
-1. Entrar en RomM.
-2. Escanear con **Gamelist** como unico proveedor (o todos; con ScreenScraper
-   desactivado solo queda gamelist).
-3. El primer escaneo copia las caratulas a `resources/roms/{platform}/{rom}/cover/`.
+1. Open RomM.
+2. Scan with **Gamelist** as the only provider (or all of them; with ScreenScraper
+   disabled, only gamelist remains).
+3. The first scan copies the covers to `resources/roms/{platform}/{rom}/cover/`.
 
-## Notas
+## Notes
 
-- Si se reinicia el montaje rclone (`rclone-media.service`), el bind FUSE del
-  contenedor puede quedar en "Socket not connected". Reiniciar RomM despues:
+- If the rclone mount is restarted (`rclone-media.service`), the container's
+  FUSE bind can end up in "Socket not connected". Restart RomM afterwards:
   `docker restart romm`.
-- Las plataformas usan los slugs oficiales de RomM: `gb`, `gbc`, `gba`, `nes`,
+- Platforms use the official RomM slugs: `gb`, `gbc`, `gba`, `nes`,
   `snes`, `n64`, `nds`, `genesis`, `mastersystem`, `gamegear`, `atari2600`,
   `atari5200`, `atari7800`, `atari800`, `lynx`, `neo-geo-pocket-color`,
   `virtualboy`, `wonderswan-color`, `pokemon-mini`, `sega32`.
-- `Fukutake StudyBox` (BIOS) y `Otros` se omiten.
+- `Fukutake StudyBox` (BIOS) and `Otros` are skipped.

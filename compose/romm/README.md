@@ -6,11 +6,11 @@ A containerized and secure deployment of RomM, serving as a unified retro gaming
 
 - **`docker-compose.yml`**: The core, portable configuration for RomM and its MariaDB database.
 - **`.env.example`**: Template for required environment variables.
-- **`build_library.py`**: Genera la biblioteca de RomM desde el montaje rclone y las carátulas de comunidad (ver [BUILD_LIBRARY.md](BUILD_LIBRARY.md)).
-- **`config.example.yml`**: Configuración de RomM para usar el `gamelist.xml` local y no leer las ROMs al escanear.
-- **`ROMM_LIBRARY_DIR/`**: Biblioteca generada (symlinks + gamelist + covers, ignorada por Git).
-- **`RETRO_DATA_DIR/database`**: Directorio para MariaDB (ignorado por Git).
-- **`RETRO_DATA_DIR/assets`, `config`, `resources`**: Datos internos de RomM y carátulas copiadas (ignorados por Git).
+- **`build_library.py`**: Builds the RomM library from the rclone mount and the community covers (see [BUILD_LIBRARY.md](BUILD_LIBRARY.md)).
+- **`config.example.yml`**: RomM configuration to use the local `gamelist.xml` and avoid reading the ROMs while scanning.
+- **`ROMM_LIBRARY_DIR/`**: Generated library (symlinks + gamelist + covers, ignored by Git).
+- **`RETRO_DATA_DIR/database`**: MariaDB data directory (ignored by Git).
+- **`RETRO_DATA_DIR/assets`, `config`, `resources`**: RomM internal data and copied covers (ignored by Git).
 
 ## Setup & Deployment
 
@@ -58,12 +58,12 @@ docker-compose --env-file .env up -d
 
 The service will be accessible locally at the port defined in your `.env` file (default `8082`).
 
-### 4. Generar la biblioteca desde rclone
+### 4. Build the library from rclone
 
-Sigue [BUILD_LIBRARY.md](BUILD_LIBRARY.md). El compose monta:
+Follow [BUILD_LIBRARY.md](BUILD_LIBRARY.md). The compose file mounts:
 
 - `ROMM_LIBRARY_DIR` -> `/romm/library/roms`
-- `RCLONE_MOUNT_DIR` -> `/mnt/media` (para los symlinks)
+- `RCLONE_MOUNT_DIR` -> `/mnt/media` (for the symlinks)
 
 ## Backups & Disaster Recovery
 

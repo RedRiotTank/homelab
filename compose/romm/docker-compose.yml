@@ -11,20 +11,20 @@ services:
       - ROMM_AUTH_SECRET_KEY=${ROMM_AUTH_SECRET_KEY:-${ROMM_SECRET_KEY}}
       - IGNORE_AUTH=${IGNORE_AUTH}
       - STEAMGRIDDB_API_KEY=${STEAMGRIDDB_API_KEY}
-      # Sin ScreenScraper: la metadata y las caratulas salen del gamelist.xml local
+      # No ScreenScraper: metadata and covers come from the local gamelist.xml
       - ROMM_BASE_URL=${ROMM_BASE_URL}
-      # Zona horaria del contenedor (los cron de RomM usan esta hora local)
+      # Container timezone (RomM cron jobs use this local time)
       - TZ=${TZ:-UTC}
-      # Reescaneo programado: cada servidor decide si lo activa y cuando
+      # Scheduled rescan: each server decides whether to enable it and when
       - ENABLE_SCHEDULED_RESCAN=${ENABLE_SCHEDULED_RESCAN:-false}
       - SCHEDULED_RESCAN_CRON=${SCHEDULED_RESCAN_CRON:-0 3 * * *}
     ports:
       - "${ROMM_PORT:-8082}:8080"
     volumes:
       - ${RETRO_DATA_DIR:-/opt/compose/romm}/resources:/romm/resources
-      # Biblioteca generada: symlinks a las ROMs del rclone + gamelist.xml/covers
+      # Generated library: symlinks to the rclone ROMs + gamelist.xml/covers
       - ${ROMM_LIBRARY_DIR:-/opt/compose/romm/library}:/romm/library/roms
-      # Montaje completo del rclone: los symlinks apuntan a /mnt/media/...
+      # Full rclone mount: the symlinks point at /mnt/media/...
       - ${RCLONE_MOUNT_DIR:-/mnt/media}:/mnt/media:ro
       - ${RETRO_DATA_DIR:-/opt/compose/romm}/assets:/romm/assets
       - ${RETRO_DATA_DIR:-/opt/compose/romm}/config:/romm/config

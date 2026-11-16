@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Genera una biblioteca compatible con RomM a partir de:
-  - el catalogo de usenet-community (/src/platforms/*.jsonl)
-  - las caratulas locales (/normalized/<plataforma>/media/covers o /src/covers)
-  - el montaje rclone (/media/Juegos/Retro/<plataforma>)
+Build a RomM-compatible library from:
+  - the usenet-community catalog (/src/platforms/*.jsonl)
+  - the local covers (/normalized/<platform>/media/covers or /src/covers)
+  - the rclone mount (/media/Juegos/Retro/<platform>)
 
-Salida:
-  <out>/<slug_romm>/<juego>       -> symlink a /mnt/media/Juegos/Retro/...
-  <out>/<slug_romm>/gamelist.xml
-  <out>/<slug_romm>/covers/<stem>.png
+Output:
+  <out>/<romm_slug>/<game>       -> symlink to /mnt/media/Juegos/Retro/...
+  <out>/<romm_slug>/gamelist.xml
+  <out>/<romm_slug>/covers/<stem>.png
 
-Se ejecuta dentro del contenedor rommapp/romm (ya trae Python + Pillow).
-El host /opt/compose/romm/library se monta en /out.
+Runs inside the rommapp/romm image (it already ships Python + Pillow).
+The host directory /opt/compose/romm/library is mounted at /out.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from xml.etree.ElementTree import Element, ElementTree, SubElement
 
 from PIL import Image
 
-# carpeta normalizada (nombre visible) -> (slug RomM, nombre visible)
+# normalized folder (display name) -> (RomM slug, display name)
 PLATFORMS: dict[str, tuple[str, str]] = {
     "Game Boy": ("gb", "Game Boy"),
     "Game Boy Color": ("gbc", "Game Boy Color"),
@@ -49,11 +49,11 @@ PLATFORMS: dict[str, tuple[str, str]] = {
     "Sega 32X": ("sega32", "Sega 32X"),
 }
 
-# BIOS/accesorios que no tienen sentido como "juego" en RomM
+# BIOS/accessories that do not make sense as a "game" in RomM
 SKIP = {"Fukutake StudyBox", "Otros"}
 
-# El nombre de la carpeta en el catalogo de comunidad no siempre coincide con
-# el de la carpeta normalizada (NES se llama "Nintendo Entertainment System").
+# The folder name in the community catalog does not always match the one in
+# the normalized set (NES is called "Nintendo Entertainment System" there).
 RCLONE_FOLDERS = {
     "Nintendo Entertainment System": "NES",
 }
@@ -97,8 +97,8 @@ def cover_destination(
     if target.exists() and not force:
         return f"./covers/{target.name}"
 
-    # Preferir el WebP ya optimizado (512 px): evita abrir y redimensionar el
-    # PNG original de 700x700, que es lo que hacia el build lento.
+    # Prefer the already optimized WebP (512 px): it avoids opening and
+    # resizing the original 700x700 PNG, which is what made the build slow.
     source: Path | None = None
     if cover_hash:
         candidate = covers_src / f"{cover_hash}.webp"
@@ -116,12 +116,12 @@ def cover_destination(
         with Image.open(source) as image:
             image = image.convert("RGB")
             image.thumbnail((512, 512), Image.LANCZOS)
-            # compress_level bajo: el build de 9k caratulas pesa mas que el
-            # tamano final; RomM reescala y guarda su propia copia.
+            # Low compress_level: the 9k-cover build costs more than the final
+            # size; RomM rescales and stores its own copy anyway.
             image.save(target, "PNG", compress_level=1)
         return f"./covers/{target.name}"
-    except Exception as error:  # una caratula rota no debe parar el lote
-        print(f"  AVISO caratula {source}: {error}", file=sys.stderr)
+    except Exception as error:  # a broken cover must not stop the batch
+        print(f"  WARN cover {source}: {error}", file=sys.stderr)
         return None
 
 
@@ -174,7 +174,7 @@ def build_platform(
                 target.unlink()
             target.symlink_to(f"{roms_target}/Juegos/Retro/{rclone_folder}/{filename}")
         except OSError as error:
-            print(f"  AVISO enlace {filename}: {error}", file=sys.stderr)
+            print(f"  WARN link {filename}: {error}", file=sys.stderr)
             continue
 
         cover = cover_destination(
@@ -222,22 +222,22 @@ def build_platform(
                     Path(entry.path).unlink(missing_ok=True)
                     pruned_covers += 1
 
-    extra = f", -{pruned_links} enlaces, -{pruned_covers} caratulas" if args.prune else ""
-    print(f"{display:42s} -> {slug:25s} {count:5d} juegos, {covers:5d} caratulas{extra}")
+    extra = f", -{pruned_links} links, -{pruned_covers} covers" if args.prune else ""
+    print(f"{display:42s} -> {slug:25s} {count:5d} games, {covers:5d} covers{extra}")
     return count
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--src", default="/src", help="directorio game-import")
-    parser.add_argument("--normalized", default="/normalized", help="ROMs normalizadas")
-    parser.add_argument("--roms-root", default="/media", help="raiz del montaje para listar")
-    parser.add_argument("--roms-target", default="/mnt/media", help="ruta de los symlinks dentro de RomM")
-    parser.add_argument("--out", default="/out/library", help="raiz de la biblioteca RomM")
-    parser.add_argument("--platforms", default="", help="lista separada por comas (nombre visible)")
-    parser.add_argument("--clean", action="store_true", help="borra la salida antes de generar")
-    parser.add_argument("--prune", action="store_true", help="borra symlinks y caratulas huerfanos")
-    parser.add_argument("--force-covers", action="store_true", help="reconvierte caratulas existentes")
+    parser.add_argument("--src", default="/src", help="game-import directory")
+    parser.add_argument("--normalized", default="/normalized", help="normalized ROMs")
+    parser.add_argument("--roms-root", default="/media", help="mount root to list")
+    parser.add_argument("--roms-target", default="/mnt/media", help="symlink target path inside RomM")
+    parser.add_argument("--out", default="/out/library", help="RomM library root")
+    parser.add_argument("--platforms", default="", help="comma-separated list (display name)")
+    parser.add_argument("--clean", action="store_true", help="delete the output before building")
+    parser.add_argument("--prune", action="store_true", help="delete orphan symlinks and covers")
+    parser.add_argument("--force-covers", action="store_true", help="reconvert existing covers")
     args = parser.parse_args()
 
     src = Path(args.src)
@@ -254,7 +254,7 @@ def main() -> None:
     total = 0
     for display in selected:
         if display not in PLATFORMS:
-            print(f"AVISO: plataforma desconocida {display}", file=sys.stderr)
+            print(f"WARN: unknown platform {display}", file=sys.stderr)
             continue
         if args.clean:
             slug = PLATFORMS[display][0]
@@ -263,7 +263,7 @@ def main() -> None:
         total += build_platform(
             display, args, src, normalized, roms_root, args.roms_target, out
         )
-    print(f"TOTAL: {total} juegos")
+    print(f"TOTAL: {total} games")
 
 
 if __name__ == "__main__":
