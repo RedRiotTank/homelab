@@ -206,7 +206,24 @@ def build_platform(
 
     tree = ElementTree(root)
     tree.write(slug_dir / "gamelist.xml", encoding="utf-8", xml_declaration=True)
-    print(f"{display:42s} -> {slug:25s} {count:5d} juegos, {covers:5d} caratulas")
+
+    pruned_links = pruned_covers = 0
+    if args.prune:
+        keep_files = set(source_files)
+        keep_covers = {f"{Path(name).stem}.png" for name in source_files}
+        for entry in os.scandir(slug_dir):
+            if entry.is_symlink() and entry.name not in keep_files:
+                Path(entry.path).unlink(missing_ok=True)
+                pruned_links += 1
+        covers_dir = slug_dir / "covers"
+        if covers_dir.is_dir():
+            for entry in os.scandir(covers_dir):
+                if entry.is_file() and entry.name not in keep_covers:
+                    Path(entry.path).unlink(missing_ok=True)
+                    pruned_covers += 1
+
+    extra = f", -{pruned_links} enlaces, -{pruned_covers} caratulas" if args.prune else ""
+    print(f"{display:42s} -> {slug:25s} {count:5d} juegos, {covers:5d} caratulas{extra}")
     return count
 
 
@@ -219,6 +236,7 @@ def main() -> None:
     parser.add_argument("--out", default="/out/library", help="raiz de la biblioteca RomM")
     parser.add_argument("--platforms", default="", help="lista separada por comas (nombre visible)")
     parser.add_argument("--clean", action="store_true", help="borra la salida antes de generar")
+    parser.add_argument("--prune", action="store_true", help="borra symlinks y caratulas huerfanos")
     parser.add_argument("--force-covers", action="store_true", help="reconvierte caratulas existentes")
     args = parser.parse_args()
 

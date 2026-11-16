@@ -49,6 +49,19 @@ Para probar una sola plataforma:
 ... --platforms "Atari 800"
 ```
 
+## Podar juegos borrados
+
+Cuando un juego desaparece del catalogo, sus symlinks y caratulas quedan
+huerfanos. `--prune` los elimina y regenera el `gamelist.xml` sin reconvertir
+las caratulas que siguen existiendo:
+
+```bash
+... --out /out/library --prune
+```
+
+Es el modo normal para actualizar la biblioteca tras borrar juegos. `--clean`
+solo hace falta para reconstruir desde cero.
+
 ## Configuracion de RomM
 
 Copiar `config.example.yml` a `${RETRO_DATA_DIR}/config/config.yml` (o dejar el
