@@ -23,11 +23,11 @@ cp .env.example .env
 nano .env
 ```
 
-Ensure you set strong database passwords and `ROMM_LIBRARY_DIR`. For the rclone
-library, set `RCLONE_MOUNT_DIR=/mnt/media` and generate the tree with
-`build_library.py` (see [BUILD_LIBRARY.md](BUILD_LIBRARY.md)). **Do not set
-`SCREENSCRAPER_USER`/`SCREENSCRAPER_PASSWORD`** if you want to use only the
-local `gamelist.xml` covers.
+Ensure you set strong database passwords, `ROMM_AUTH_SECRET_KEY`, and
+`ROMM_LIBRARY_DIR`. For the rclone library, set `RCLONE_MOUNT_DIR=/mnt/media`
+and generate the tree with `build_library.py` (see
+[BUILD_LIBRARY.md](BUILD_LIBRARY.md)). ScreenScraper is not passed to the
+container: metadata and covers come only from the local `gamelist.xml`.
 
 ### 2. Configure Local Monitoring (Optional)
 
