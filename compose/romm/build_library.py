@@ -34,6 +34,7 @@ PLATFORMS: dict[str, tuple[str, str]] = {
     "Super Nintendo": ("snes", "Super Nintendo"),
     "Nintendo 64": ("n64", "Nintendo 64"),
     "Nintendo DS": ("nds", "Nintendo DS"),
+    "Nintendo 3DS": ("3ds", "Nintendo 3DS"),
     "Mega Drive": ("genesis", "Mega Drive"),
     "Master System": ("mastersystem", "Master System"),
     "Game Gear": ("gamegear", "Game Gear"),
