@@ -62,6 +62,8 @@ RCLONE_FOLDERS = {
 ROM_EXTENSIONS = {
     ".gb", ".gbc", ".gba", ".nes", ".fds", ".unf", ".unh", ".sfc", ".smc",
     ".n64", ".z64", ".v64", ".nds", ".md", ".gen", ".smd", ".gg", ".sms",
+    # Nintendo 3DS: decrypted ROMs, installable packages and compressed dumps.
+    ".3ds", ".cia", ".cci", ".z3ds",
     ".a26", ".a52", ".a78", ".atr", ".xex", ".xfd", ".cas", ".lnx", ".lyx",
     ".ngp", ".ngc", ".min", ".32x", ".vb", ".ws", ".wsc", ".bin",
 }
