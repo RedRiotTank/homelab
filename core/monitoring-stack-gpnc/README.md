@@ -47,7 +47,7 @@ This stack **does** ship its own `docker-compose.override.yml`, but for a differ
 
 ### Pull metrics locally, pull metrics remotely, push logs everywhere
 
-Metrics use a pull model: Prometheus scrapes `node-exporter` and `cadvisor` on the local host directly, and *also* scrapes remote/edge-node exporters listed in local target files under `configs/prometheus/targets/`. Those files are not committed because they normally contain private hostnames or IP addresses; see [`configs/prometheus/targets/README.md`](configs/prometheus/targets/README.md). [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) is the lightweight agent deployed on those remote nodes. Logs use the opposite model: Promtail instances (local, and the ones bundled into most other stacks via their override layer) push log streams into Loki.
+Metrics use a pull model: Prometheus scrapes `node-exporter` and `cadvisor` on the local host directly, and *also* scrapes remote/edge-node exporters listed in local target files under `configs/prometheus/targets/`. Those files are not committed because they normally contain private hostnames or IP addresses; see [`configs/prometheus/targets/README.md`](configs/prometheus/targets/README.md). The default scrape and evaluation interval is **30 s**; lower it in `configs/prometheus/prometheus.yml` only if you need finer resolution. [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) is the lightweight agent deployed on those remote nodes. Logs use the opposite model: Promtail instances (local, and the ones bundled into most other stacks via their override layer) push log streams into Loki.
 
 ### Alerting defaults to a safe no-op channel
 
