@@ -25,7 +25,7 @@ In short: if a new stack needs `proxy_net` or `monitoring_net` to be *reachable*
 | [tailscale-client](./tailscale-client/) | The VPN agent deployed on each node to join the tailnet managed by `headscale`. |
 | [komodo](./komodo/) | Optional GitOps orchestration: web UI, API, and MongoDB backing store for deploying and managing stacks across one or more servers. |
 | [komodo-periphery](./komodo-periphery/) | The lightweight Komodo agent for edge nodes that don't run the full `komodo` core stack. |
-| [monitoring-stack-gpnc](./monitoring-stack-gpnc/) | The central observability hub: Grafana, Prometheus, Loki, Alertmanager. Owns the `monitoring` network every other stack ships logs to, and pulls metrics from local and remote exporters. |
+| [monitoring-stack-gpnc](./monitoring-stack-gpnc/) | The central observability hub: Grafana, Prometheus, Loki, Alertmanager. Owns the `monitoring` network most other stacks ship logs to, and pulls metrics from local and remote exporters. |
 | [monitoring-agent-gpnc](./monitoring-agent-gpnc/) | The lightweight per-node counterpart (cAdvisor, Node Exporter, Promtail) deployed on edge nodes to feed the central monitoring stack over the private network. |
 | [backrest](./backrest/) | Restic-powered backup orchestrator. Has read-only visibility into host data paths and Docker volumes, and ships snapshots to local or cloud storage. |
 | [vaultwarden](./vaultwarden/) | Self-hosted Bitwarden-compatible password manager. Stores every other credential and serves the official Bitwarden clients. |
@@ -42,7 +42,7 @@ slimmer footprint that connects over a private network.
 │  [ proxy-stack ] ── proxy_net ──┬── [ adguard ] ── [ headscale ]     │
 │       (ingress, TLS)            │                                   │
 │                                 ├── [ komodo ] ── (exposed apps)     │
-│  [ monitoring-stack ] ── monitoring ── (all stacks ship logs here)   │
+│  [ monitoring-stack ] ── monitoring ── (most stacks ship logs here)   │
 │       (Grafana/Prometheus/Loki)                                     │
 │                                 ▲                                   │
 │  [ backrest ] ── read-only ─────┴── <data paths>, Docker volumes    │
@@ -89,6 +89,6 @@ defaults. See [`../docs/deployment.md`](../docs/deployment.md).
 
 - **Env-driven configuration:** every stack ships a `.env.example`; real `.env` files are git-ignored (see [.gitignore](../.gitignore)).
 - **Named Docker volumes over bind mounts** for internal state, to stay host-path-agnostic — [monitoring-stack-gpnc](./monitoring-stack-gpnc/) is the deliberate exception, using pre-existing `external: true` volumes so historical metrics/dashboards survive a stack teardown.
-- **`docker-compose.override.yml` for host-specific concerns** (network attachment, logging labels) — kept separate from the portable base `docker-compose.yml` so the latter stays infrastructure-agnostic. [komodo](./komodo/) and [komodo-periphery](./komodo-periphery/) are exceptions and don't ship one; [tailscale-client](./tailscale-client/) ships one that carries labels only, since `network_mode: host` rules out network attachment.
+- **`docker-compose.override.yml` for host-specific concerns** (network attachment, logging labels) — kept separate from the portable base `docker-compose.yml` so the latter stays infrastructure-agnostic. [komodo-periphery](./komodo-periphery/) is an exception and doesn't ship one; [tailscale-client](./tailscale-client/) ships one that carries labels only, since `network_mode: host` rules out network attachment.
 - **Consistent logging labels** (`logging: promtail`, `logging_jobname: <stack>`) so the central Promtail in [monitoring-stack-gpnc](./monitoring-stack-gpnc/) can discover and tag every container's logs uniformly.
-- **GitOps-first deployment:** every stack documents both an orchestrator-managed path and a manual CLI path; the repository does not require a specific orchestrator.
+- **Portable deployment:** every stack documents a manual Docker Compose path, and most also describe an orchestrator-managed path; the repository does not require a specific orchestrator.

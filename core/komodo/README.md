@@ -49,7 +49,7 @@ Both path variables can be overridden in `.env` to relocate the stacks directory
 
 ### The Override Is Committed, But Komodo Must Not Manage Itself
 
-Like every other stack in this repository, `docker-compose.override.yml` is committed here and carries the host-specific concerns (port binding, ingress network, observability labels) on top of the infrastructure-agnostic base `docker-compose.yml`.
+Like most stacks in this repository, `docker-compose.override.yml` is committed here and carries the host-specific concerns (port binding, ingress network, observability labels) on top of the infrastructure-agnostic base `docker-compose.yml`.
 
 Komodo itself is a GitOps engine that pulls this repository and applies compose files to the hosts it manages. Committing Komodo's own override would normally risk a circular dependency between "the config Komodo deploys" and "the config that deploys Komodo." This repo avoids that circularity with a deployment rule instead of hiding the file:
 
@@ -107,7 +107,7 @@ networks:
 ## File Structure
 
 - `docker-compose.yml` — core, periphery, and MongoDB service definitions; infrastructure-agnostic, no host ports, no external networks.
-- `docker-compose.override.yml` — host-specific port binding, ingress network (`proxy_net`), and observability (`monitoring_net`) labels. Committed, like every other stack's override — but **never deploy this directory as a Stack inside Komodo's own Web UI**; see [Architecture & Design Decisions](#architecture--design-decisions).
+- `docker-compose.override.yml` — host-specific port binding, ingress network (`proxy_net`), and observability (`monitoring_net`) labels. Committed, like most stacks' overrides — but **never deploy this directory as a Stack inside Komodo's own Web UI**; see [Architecture & Design Decisions](#architecture--design-decisions).
 - `.env.example` — template for image versions, host paths, and secrets.
 
 ## Configuration & Environment Variables

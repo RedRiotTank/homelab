@@ -32,14 +32,14 @@ The central observability backbone for the homelab: metrics collection (Promethe
 
 ### Shared `monitoring` network
 
-All services here join a single Docker network literally named `monitoring`, created by this stack's own `docker-compose.yml` (not `external`, since this is the owning stack — every other stack references it `external: true` as `monitoring_net`).
+All services here join a single Docker network literally named `monitoring`, created by this stack's own `docker-compose.yml` (not `external`, since this is the owning stack — other stacks reference it as an external network, usually named `monitoring_net`).
 
 Despite the name, joining `monitoring`/`monitoring_net` is **not** what makes Promtail or Prometheus pick up another stack's container:
 
 - **Promtail** discovers every container through the mounted Docker socket (`docker_sd_configs` in `configs/promtail/promtail.yaml`) and reads its log files straight off disk — it never talks to the target container over the network. What actually routes a container's logs correctly is the `logging` / `logging_jobname` **labels**, not network membership.
 - **Prometheus** only scrapes the exact targets listed in `configs/prometheus/prometheus.yml` (`prometheus`, `alertmanager`, `node-exporter`, `cadvisor`, local and the remote-node targets over Tailscale). It never scrapes adguard, backrest, vaultwarden, headscale, komodo, or any other app container, regardless of which network they're on.
 
-So for every other stack in this repository, attaching to `monitoring_net` is effectively decorative for telemetry purposes — harmless to keep (e.g. useful for `docker exec <container> curl http://loki:3100/ready` while debugging), but it is the `logging`/`logging_jobname` labels alone that make Promtail ship a container's logs, not the network attachment.
+So for other stacks in this repository, attaching to `monitoring_net` is effectively decorative for telemetry purposes — harmless to keep (e.g. useful for `docker exec <container> curl http://loki:3100/ready` while debugging), but it is the `logging`/`logging_jobname` labels alone that make Promtail ship a container's logs, not the network attachment.
 
 This stack **does** ship its own `docker-compose.override.yml`, but for a different reason than everyone else's: it attaches `grafana` (only) to `proxy_net`, so the dashboard can be reverse-proxied by [proxy-stack](../proxy-stack/README.md) under a custom domain instead of, or in addition to, its direct host port. `prometheus`, `alertmanager`, `redis`, and the rest intentionally stay off `proxy_net` — see [Configuration & Environment Variables](#configuration--environment-variables) for their loopback-binding options instead.
 
@@ -47,7 +47,7 @@ This stack **does** ship its own `docker-compose.override.yml`, but for a differ
 
 ### Pull metrics locally, pull metrics remotely, push logs everywhere
 
-Metrics use a pull model: Prometheus scrapes `node-exporter` and `cadvisor` on the local host directly, and *also* scrapes remote/edge-node exporters listed in local target files under `configs/prometheus/targets/`. Those files are not committed because they normally contain private hostnames or IP addresses; see [`configs/prometheus/targets/README.md`](configs/prometheus/targets/README.md). [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) is the lightweight agent deployed on those remote nodes. Logs use the opposite model: Promtail instances (local, and the ones bundled into every other stack via their override layer) push log streams into Loki.
+Metrics use a pull model: Prometheus scrapes `node-exporter` and `cadvisor` on the local host directly, and *also* scrapes remote/edge-node exporters listed in local target files under `configs/prometheus/targets/`. Those files are not committed because they normally contain private hostnames or IP addresses; see [`configs/prometheus/targets/README.md`](configs/prometheus/targets/README.md). [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) is the lightweight agent deployed on those remote nodes. Logs use the opposite model: Promtail instances (local, and the ones bundled into most other stacks via their override layer) push log streams into Loki.
 
 ### Alerting defaults to a safe no-op channel
 
@@ -55,7 +55,7 @@ Alertmanager's active config (`configs/alertmanager/alertmanager-fallback-config
 
 ### Externally managed data volumes
 
-Unlike every other stack in this repository (which declares its own named volumes), `grafana-data`, `prometheus-data`, and `loki-data` are declared `external: true`, parameterized via `GRAFANA_DATA_VOLUME`, `PROMETHEUS_DATA_VOLUME`, and `LOKI_DATA_VOLUME` (defaulting to `monitoring-stack-gpnc_grafana-data`, etc.). Docker Compose will **not** create these automatically — they must already exist (from a prior deployment) or be created manually before the first `up`. This is a deliberate guard against accidentally recreating/losing the stack's historical metrics and dashboards state when the compose project is redeployed or renamed. See [Deployment & Operational Commands](#deployment--operational-commands).
+Unlike most stacks in this repository (which declare their own named volumes), `grafana-data`, `prometheus-data`, and `loki-data` are declared `external: true`, parameterized via `GRAFANA_DATA_VOLUME`, `PROMETHEUS_DATA_VOLUME`, and `LOKI_DATA_VOLUME` (defaulting to `monitoring-stack-gpnc_grafana-data`, etc.). Docker Compose will **not** create these automatically — they must already exist (from a prior deployment) or be created manually before the first `up`. This is a deliberate guard against accidentally recreating/losing the stack's historical metrics and dashboards state when the compose project is redeployed or renamed. See [Deployment & Operational Commands](#deployment--operational-commands).
 
 ### Consistent labeling via YAML anchors
 
