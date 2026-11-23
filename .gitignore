@@ -13,6 +13,8 @@
 # =========================================
 # Local Prometheus remote-target files may contain private hostnames/IPs.
 core/monitoring-stack-gpnc/configs/prometheus/targets/*.yml
+# Local Alertmanager configs may contain bot tokens, SMTP passwords, etc.
+core/monitoring-stack-gpnc/configs/alertmanager/*.local.yml
 #docker-compose.override.yml
 *.log
 *.sql

@@ -110,6 +110,7 @@ monitoring-stack-gpnc/
 | `MONITORING_CPUS` | `0.5` | Per-service CPU limit (applied uniformly). |
 | `MONITORING_MEM_LIMIT` | `512m` | Default memory limit for the stack. |
 | `PROMETHEUS_MEM_LIMIT` | `1g` | Prometheus-specific memory limit; overrides `MONITORING_MEM_LIMIT` for the Prometheus container. |
+| `ALERTMANAGER_CONFIG_FILE` | `./configs/alertmanager/alertmanager-fallback-config.yml` | Alertmanager config mounted at `/etc/alertmanager/config.yml`. Point it at a private file to use Telegram or email. |
 | `GRAFANA_PORT` / `PROMETHEUS_PORT` / `ALERTMANAGER_PORT` / `ALERT_RECEIVER_PORT` / `REDIS_PORT` | `127.0.0.1:<port>` | Host bindings for management ports. Keep them on loopback when running behind [proxy-stack](../proxy-stack/README.md). |
 | `LOKI_PORT` | `3100` | Loki push/query port. It must be reachable from every Promtail instance; restrict access with a private network or firewall. |
 | `GRAFANA_DATA_VOLUME` / `PROMETHEUS_DATA_VOLUME` / `LOKI_DATA_VOLUME` | `monitoring-stack-gpnc_grafana-data` / `..._prometheus-data` / `..._loki-data` | Names of the pre-existing **external** volumes (see prerequisite below). |
@@ -168,18 +169,44 @@ make open    # opens http://localhost:3000/ (Grafana)
 
 ## Specific Notes
 
-### Alerting Channel Templates
+### Notification Channels
 
 `docker-compose.yml` mounts `configs/alertmanager/alertmanager-fallback-config.yml` by default, which routes all alerts to the local `uncomplicated-alert-receiver` webhook viewer — no external credentials required. The receiver is exposed only on `127.0.0.1:${ALERT_RECEIVER_PORT:-9094}` and is **not** attached to `proxy_net`; open it through an SSH tunnel or add a reverse-proxy host if you want remote access. The fallback route groups for 30 s, re-groups every 5 min, and repeats an ongoing alert every 4 h.
 
-Four alternative, ready-to-edit templates exist in the same directory for real notification channels, each with severity-based routing already configured:
+Ready-to-edit templates for external channels live in the same directory:
 
-- `alertmanager-slack-config.yml` — Slack incoming webhook.
-- `alertmanager-email-config.yml` — SMTP/email (e.g. SendGrid).
+- `alertmanager-telegram-config.yml` — native Telegram bot (recommended for a homelab: no public endpoint or SMTP server needed).
+- `alertmanager-email-config.yml` — generic SMTP/email (works with any provider that offers SMTP and app passwords).
+- `alertmanager-slack-config.yml` — Slack incoming webhook (legacy example).
 - `alertmanager-opsgenie-config.yml` — Opsgenie API.
 - `alertmanager-pushover-config.yml` — Pushover push notifications.
 
-To activate one: fill in its placeholder credentials (API keys, webhook URLs, tokens), then update the `alertmanager` service's volume mount in `docker-compose.yml` to point at the chosen file instead of the fallback, and restart the `alertmanager` container. Until you do that, alerts stay in the local receiver UI and are not emailed or pushed anywhere.
+To activate one:
+
+1. Copy the chosen template to a private location, for example
+   `~/alertmanager-telegram.local.yml` or a directory outside the repository.
+2. Fill in the credentials. A `*.local.yml` file inside this directory is
+   already ignored by Git.
+3. Set `ALERTMANAGER_CONFIG_FILE` in `.env` (or in the Komodo stack
+   environment) to the absolute path of that private file.
+4. Recreate Alertmanager with `docker compose up -d --force-recreate alertmanager`.
+5. Send a test alert:
+
+   ```bash
+   curl -XPOST http://127.0.0.1:9093/api/v2/alerts \
+     -H 'Content-Type: application/json' \
+     -d '[{"labels":{"alertname":"TestAlert","severity":"warning"},"annotations":{"summary":"Test notification"}}]'
+   ```
+
+Telegram: create a bot with `@BotFather`, copy its token, and get the chat ID
+from `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending the bot a
+message. Email: use your provider's SMTP host/port and an app-specific
+password; the template enables STARTTLS.
+
+The active config file is `/etc/alertmanager/config.yml`, mounted from the file
+selected by `ALERTMANAGER_CONFIG_FILE`. The `alertmanager.yml` shipped inside
+the image is not used. Full alert labels remain available in the Alertmanager
+UI and the UAR; notification messages are kept concise.
 
 The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by node-exporter.
 

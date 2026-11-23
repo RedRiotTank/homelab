@@ -1,0 +1,28 @@
+# Telegram notification template.
+#
+# Create a bot with @BotFather, obtain its token, and get the chat ID of the
+# user/group that should receive alerts. Then copy this file to a private
+# location, fill in the two values, and point ALERTMANAGER_CONFIG_FILE at it.
+# Do not commit real tokens or chat IDs.
+#
+# The default Alertmanager Telegram template is used for the message body.
+# Full alert labels remain available in the Alertmanager UI and the UAR.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'instance', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: telegram
+
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token: 'REPLACE_WITH_TELEGRAM_BOT_TOKEN'
+        # Numeric chat ID. Groups usually have a negative ID.
+        chat_id: 123456789
+        send_resolved: true
+        parse_mode: HTML
