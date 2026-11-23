@@ -285,7 +285,7 @@ groups:
       description: "Prometheus has been unable to read Backrest status for more than 5 minutes."
     labels:
       severity: critical
-    expr: backrest_up == 0
+    expr: up{job="backrest"} == 0 or backrest_up == 0
     for: 5m
 
   - alert: BackrestBackupFailed
