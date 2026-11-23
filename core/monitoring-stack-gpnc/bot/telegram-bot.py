@@ -295,7 +295,35 @@ def handle_callback(callback: dict) -> None:
         send(chat_id, format_status())
 
 
+def setup_commands() -> None:
+    commands = [
+        {"command": "alerts", "description": "Show active alerts"},
+        {"command": "silences", "description": "Show active silences"},
+        {"command": "status", "description": "Alertmanager status and uptime"},
+        {"command": "help", "description": "Show available commands"},
+        {"command": "id", "description": "Show this chat ID"},
+    ]
+    payload = json.dumps(commands)
+    try:
+        telegram("setMyCommands", {"commands": payload})
+        telegram(
+            "setMyCommands",
+            {
+                "commands": payload,
+                "scope": json.dumps({"type": "all_group_chats"}),
+            },
+        )
+        telegram(
+            "setChatMenuButton",
+            {"menu_button": json.dumps({"type": "commands"})},
+        )
+        log("telegram commands menu configured")
+    except Exception as error:
+        log(f"could not configure telegram commands menu: {error}")
+
+
 def poll() -> None:
+    setup_commands()
     log(
         f"telegram bot started: alertmanager={ALERTMANAGER_URL} "
         f"allowed_chats={len(ALLOWED_CHATS)}"
