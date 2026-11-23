@@ -89,3 +89,7 @@ compose/appflowy/services/
 compose/appflowy/src/
 compose/appflowy/tests/
 compose/appflowy/xtask/
+
+# Python bytecode
+__pycache__/
+*.pyc
