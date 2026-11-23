@@ -1,6 +1,8 @@
 services:
   database:
     image: mariadb:${MARIADB_VERSION:-11}
+    cpus: 1
+    mem_limit: 1g
     container_name: pterodactyl-database
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password
@@ -14,6 +16,8 @@ services:
 
   cache:
     image: redis:${REDIS_VERSION:-alpine}
+    cpus: 0.5
+    mem_limit: 256m
     container_name: pterodactyl-cache
     restart: unless-stopped
     volumes:
@@ -21,6 +25,8 @@ services:
 
   panel:
     image: ghcr.io/pterodactyl/panel:${PANEL_VERSION:-latest}
+    cpus: 1
+    mem_limit: 1g
     container_name: pterodactyl-panel
     restart: unless-stopped
     environment:
@@ -60,6 +66,8 @@ services:
 
   wings:
     image: ghcr.io/pterodactyl/wings:${WINGS_VERSION:-latest}
+    cpus: 2
+    mem_limit: 2g
     container_name: pterodactyl-wings
     restart: unless-stopped
     tty: true

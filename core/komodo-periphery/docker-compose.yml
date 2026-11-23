@@ -1,6 +1,8 @@
 services:
   komodo-periphery:
     image: ghcr.io/moghtech/komodo-periphery:${KOMODO_VERSION:-latest}
+    cpus: 0.5
+    mem_limit: 512m
     container_name: komodo-periphery
     restart: unless-stopped
     ports:

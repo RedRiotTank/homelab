@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 
 TELEGRAM_API = os.environ.get("TELEGRAM_API_URL", "https://api.telegram.org").rstrip("/")
 ALERTMANAGER_URL = os.environ.get("ALERTMANAGER_URL", "http://alertmanager:9093").rstrip("/")
+PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL", "http://prometheus:9090").rstrip("/")
 CONFIG_FILE = os.environ.get("BOT_CONFIG_FILE", "/config/alertmanager.yml")
 ALLOWED_ENV = os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS", "")
 NODE_NAMES_ENV = os.environ.get("NODE_DISPLAY_NAMES", "")
@@ -78,6 +79,14 @@ def alertmanager(path: str) -> object:
     request = urllib.request.Request(f"{ALERTMANAGER_URL}{path}")
     with urllib.request.urlopen(request, timeout=15) as response:
         return json.loads(response.read().decode())
+
+
+def prometheus(query: str) -> list[dict]:
+    url = f"{PROMETHEUS_URL}/api/v1/query?query={urllib.parse.quote(query)}"
+    request = urllib.request.Request(url)
+    with urllib.request.urlopen(request, timeout=15) as response:
+        payload = json.loads(response.read().decode())
+    return (payload.get("data") or {}).get("result") or []
 
 
 def escape(value: object) -> str:
@@ -228,17 +237,84 @@ def format_status() -> str:
     )
 
 
+def format_containers() -> str:
+    def pmap(query: str) -> dict[tuple[str, str], float]:
+        values: dict[tuple[str, str], float] = {}
+        for item in prometheus(query):
+            labels = item.get("metric") or {}
+            name = labels.get("name")
+            if not name:
+                continue
+            node = labels.get("node") or labels.get("instance") or "unknown"
+            if ":" in node and not node.startswith("["):
+                node = node.split(":", 1)[0]
+            try:
+                values[(node, name)] = float(item["value"][1])
+            except (KeyError, IndexError, ValueError):
+                continue
+        return values
+
+    memory = pmap("sum by (node,name) (container_memory_working_set_bytes{name=~\".+\"})")
+    cpu = pmap("sum by (node,name) (rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]))")
+    mem_limit = pmap("max by (node,name) (container_spec_memory_limit_bytes{name=~\".+\"})")
+    cpu_limit = pmap(
+        "max by (node,name) (container_spec_cpu_quota{name=~\".+\"} / container_spec_cpu_period{name=~\".+\"})"
+    )
+
+    keys = set(memory) | set(cpu) | set(mem_limit) | set(cpu_limit)
+    if not keys:
+        return "📦 <b>No container metrics found</b>"
+
+    def fmt_bytes(value: float) -> str:
+        if value >= 1024**3:
+            return f"{value / 1024**3:.1f}G"
+        return f"{value / 1024**2:.0f}M"
+
+    def fmt_cpu(value: float) -> str:
+        return f"{value:.2f}c"
+
+    groups: dict[str, list[str]] = {}
+    for node, name in keys:
+        display = NODE_NAMES.get(node, node)
+        mem = memory.get((node, name), 0.0)
+        cpu_value = cpu.get((node, name), 0.0)
+        mem_lim = mem_limit.get((node, name), 0.0)
+        cpu_lim = cpu_limit.get((node, name), 0.0)
+        if mem_lim <= 0 or mem_lim > 1e15:
+            mem_lim = 0.0
+        if cpu_lim <= 0 or cpu_lim > 1e6:
+            cpu_lim = 0.0
+        cpu_text = fmt_cpu(cpu_value) + (f"/{fmt_cpu(cpu_lim)}" if cpu_lim else "")
+        mem_text = fmt_bytes(mem) + (f"/{fmt_bytes(mem_lim)}" if mem_lim else "")
+        flag = "" if cpu_lim and mem_lim else " ⚠️"
+        groups.setdefault(display, []).append(
+            f"• <code>{escape(name)}</code> {cpu_text} {mem_text}{flag}"
+        )
+
+    blocks = [
+        f"📦 <b>{len(keys)} containers</b>",
+        "<i>cpu / memory; ⚠️ = missing limit</i>",
+    ]
+    for display in sorted(groups, key=str.lower):
+        blocks.append(f"🖥 <b>Node: {escape(display)}</b> ({len(groups[display])})")
+        blocks.extend(sorted(groups[display]))
+    return "\n\n".join(blocks)
+
+
 def keyboard() -> str:
     return json.dumps(
         {
             "inline_keyboard": [
                 [
                     {"text": "🔥 Alerts", "callback_data": "alerts"},
-                    {"text": "🔕 Silences", "callback_data": "silences"},
+                    {"text": "📦 Containers", "callback_data": "containers"},
                 ],
                 [
+                    {"text": "🔕 Silences", "callback_data": "silences"},
                     {"text": "📊 Status", "callback_data": "status"},
-                    {"text": "🔄 Refresh", "callback_data": "alerts"},
+                ],
+                [
+                    {"text": "🔄 Refresh alerts", "callback_data": "alerts"},
                 ],
             ]
         }
@@ -246,17 +322,37 @@ def keyboard() -> str:
 
 
 def send(chat_id: int, text: str, with_keyboard: bool = True) -> None:
-    if len(text) > 4000:
-        text = text[:3950] + "\n…"
-    params = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": "true",
-    }
-    if with_keyboard:
-        params["reply_markup"] = keyboard()
-    telegram("sendMessage", params)
+    limit = 3900
+    chunks: list[str] = []
+    current = ""
+    for line in text.splitlines():
+        while len(line) > limit:
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.append(line[:limit])
+            line = line[limit:]
+        if len(current) + len(line) + 1 > limit:
+            if current:
+                chunks.append(current)
+            current = line
+        else:
+            current = line if not current else current + "\n" + line
+    if current:
+        chunks.append(current)
+    if not chunks:
+        chunks = [""]
+
+    for index, chunk in enumerate(chunks):
+        params = {
+            "chat_id": chat_id,
+            "text": chunk,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": "true",
+        }
+        if with_keyboard and index == len(chunks) - 1:
+            params["reply_markup"] = keyboard()
+        telegram("sendMessage", params)
 
 
 def is_allowed(chat_id: int) -> bool:
@@ -285,6 +381,7 @@ def handle_command(chat_id: int, text: str) -> None:
             "🤖 <b>Homelab alerts</b>\n"
             "I can show the current Alertmanager state.\n\n"
             "🔥 /alerts — active alerts\n"
+            "📦 /containers — all containers and limits\n"
             "🔕 /silences — active silences\n"
             "📊 /status — Alertmanager version and uptime\n"
             "🆔 /id — this chat ID",
@@ -294,6 +391,11 @@ def handle_command(chat_id: int, text: str) -> None:
             send(chat_id, format_alerts(fetch_alerts()))
         except Exception as error:
             send(chat_id, f"❌ Could not read alerts: {escape(error)}")
+    elif command == "/containers":
+        try:
+            send(chat_id, format_containers())
+        except Exception as error:
+            send(chat_id, f"❌ Could not read containers: {escape(error)}")
     elif command == "/silences":
         try:
             send(chat_id, format_silences(fetch_silences()))
@@ -319,6 +421,8 @@ def handle_callback(callback: dict) -> None:
     data = callback.get("data")
     if data == "alerts":
         send(chat_id, format_alerts(fetch_alerts()))
+    elif data == "containers":
+        send(chat_id, format_containers())
     elif data == "silences":
         send(chat_id, format_silences(fetch_silences()))
     elif data == "status":
@@ -328,6 +432,7 @@ def handle_callback(callback: dict) -> None:
 def setup_commands() -> None:
     commands = [
         {"command": "alerts", "description": "Show active alerts"},
+        {"command": "containers", "description": "Show all containers and limits"},
         {"command": "silences", "description": "Show active silences"},
         {"command": "status", "description": "Alertmanager status and uptime"},
         {"command": "help", "description": "Show available commands"},

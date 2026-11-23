@@ -1,6 +1,8 @@
 services:
   romm:
     image: rommapp/romm:latest
+    cpus: 2
+    mem_limit: 2g
     container_name: romm
     restart: unless-stopped
     environment:
@@ -35,6 +37,8 @@ services:
 
   romm-db:
     image: mariadb:latest
+    cpus: 1
+    mem_limit: 1g
     container_name: romm-db
     restart: unless-stopped
     environment:

@@ -1,6 +1,8 @@
 services:
   adguardhome:
     image: adguard/adguardhome:latest
+    cpus: 0.5
+    mem_limit: 512m
     container_name: adguardhome
     restart: unless-stopped
     ports:

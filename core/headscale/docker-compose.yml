@@ -1,6 +1,8 @@
 services:
   headscale:
     image: headscale/headscale:stable
+    cpus: 0.5
+    mem_limit: 512m
     container_name: headscale
     restart: unless-stopped
     command: serve
@@ -12,6 +14,8 @@ services:
 
   headplane:
     image: ghcr.io/tale/headplane:latest
+    cpus: 0.5
+    mem_limit: 512m
     container_name: headplane
     restart: unless-stopped
     volumes:

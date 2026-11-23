@@ -18,7 +18,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${JELLYFIN_MEMORY_LIMIT:-4096M}
+          cpus: '${JELLYFIN_CPUS:-6}'
+          memory: ${JELLYFIN_MEMORY_LIMIT:-10G}
         reservations:
           devices:
             - driver: nvidia

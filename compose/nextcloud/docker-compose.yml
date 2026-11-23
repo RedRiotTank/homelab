@@ -2,6 +2,8 @@ services:
   nextcloud-db:
     container_name: nextcloud-db
     image: postgres:15-alpine
+    cpus: 1
+    mem_limit: 1g
     restart: unless-stopped
     volumes:
       - ${NEXTCLOUD_DB_DATA_PATH:-/opt/compose/nextcloud/db_data}:/var/lib/postgresql/data
@@ -13,11 +15,15 @@ services:
   nextcloud-redis:
     container_name: nextcloud-redis
     image: redis:alpine
+    cpus: 0.5
+    mem_limit: 256m
     restart: unless-stopped
 
   nextcloud:
     container_name: nextcloud
     image: nextcloud:latest
+    cpus: 2
+    mem_limit: 2g
     restart: unless-stopped
     depends_on:
       - nextcloud-db

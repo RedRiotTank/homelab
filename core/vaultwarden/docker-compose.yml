@@ -1,6 +1,8 @@
 services:
   vaultwarden:
     image: vaultwarden/server:latest
+    cpus: 0.5
+    mem_limit: 512m
     container_name: vaultwarden
     restart: unless-stopped
     environment:

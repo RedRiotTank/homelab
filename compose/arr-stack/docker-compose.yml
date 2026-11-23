@@ -3,6 +3,8 @@ version: "3.8"
 services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
+    cpus: 2
+    mem_limit: 2g
     container_name: qbittorrent
     environment:
       - PUID=${PUID:-1001}
@@ -23,6 +25,8 @@ services:
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
+    cpus: 1
+    mem_limit: 1g
     container_name: sonarr
     environment:
       - PUID=${PUID:-1001}
@@ -40,6 +44,8 @@ services:
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
+    cpus: 0.5
+    mem_limit: 512m
     container_name: prowlarr
     environment:
       - PUID=${PUID:-1001}
@@ -55,6 +61,8 @@ services:
 
   kitsunarr:
     build: ./kitsunarr_src
+    cpus: 1
+    mem_limit: 1g
     container_name: kitsunarr
     profiles:
       - kitsunarr_enabled

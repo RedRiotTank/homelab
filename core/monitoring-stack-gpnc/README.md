@@ -219,6 +219,7 @@ Alertmanager's Telegram integration only **sends** messages. For on-demand
 queries, the stack includes a small read-only bot in `bot/telegram-bot.py`:
 
 - `/alerts` — active alerts grouped by node, with severity, device and container.
+- `/containers` — every container, grouped by node, with CPU, memory and limits.
 - `/silences` — active silences and their matchers.
 - `/status` — Alertmanager version, uptime and cluster state.
 - `/help`, `/id` — command list and current chat ID.

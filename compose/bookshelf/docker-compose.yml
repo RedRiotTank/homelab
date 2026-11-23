@@ -1,6 +1,8 @@
 services:
   calibre-web:
     image: lscr.io/linuxserver/calibre-web:latest
+    cpus: 0.5
+    mem_limit: 1g
     container_name: calibre-web
     environment:
       - PUID=${PUID:-1001}
@@ -19,6 +21,8 @@ services:
 
   lazylibrarian:
     image: lscr.io/linuxserver/lazylibrarian:latest
+    cpus: 1
+    mem_limit: 1g
     container_name: lazylibrarian
     environment:
       - PUID=${PUID:-1001}

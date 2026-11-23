@@ -1,6 +1,8 @@
 services:
   backrest:
     image: ghcr.io/garethgeorge/backrest:latest
+    cpus: 1
+    mem_limit: 1g
     container_name: backrest
     restart: unless-stopped
     ports:
