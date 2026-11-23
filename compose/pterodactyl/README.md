@@ -178,8 +178,8 @@ Visit `APP_URL` to confirm the Panel login page loads, log in with the admin acc
 ### Post-Deployment Access
 
 - **Panel Web UI:** exclusively via [Nginx Proxy Manager](../../core/proxy-stack/README.md), proxying to the container name `panel` on port `80`.
-- **Wings Daemon API / Console:** `https://<edge node-FQDN>:${WINGS_API_PORT}`, reached directly by the Panel and by admin browsers for the live console — not proxied by NPM.
-- **SFTP File Access:** `sftp://<edge node-FQDN>:${WINGS_SFTP_PORT}`, per-server credentials shown in each server's Panel page.
+- **Wings Daemon API / Console:** `https://<edge-node-fqdn>:${WINGS_API_PORT}`, reached directly by the Panel and by admin browsers for the live console — not proxied by NPM.
+- **SFTP File Access:** `sftp://<edge-node-fqdn>:${WINGS_SFTP_PORT}`, per-server credentials shown in each server's Panel page.
 
 ## Specific Notes
 
