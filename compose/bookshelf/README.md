@@ -5,7 +5,7 @@ A containerized and secure deployment for managing and reading a digital book li
 ## Structure
 
 - **`docker-compose.yml`**: The core, portable configuration for Calibre-Web and LazyLibrarian.
-- **`docker-compose.override.yml`**: Local monitoring labels and network overrides (ignored by Git).
+- **`docker-compose.override.yml`**: Monitoring labels and network overrides (versioned in Git).
 - **`.env.example`**: Template for required environment variables.
 - **`config/`**: Directory for application settings, internal databases, and logs (ignored by Git).
 - **`data/`**: Directory for downloads and library symlinks (ignored by Git).

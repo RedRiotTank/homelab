@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  nginx:
+    container_name: appflowy_nginx
+    networks:
+      - monitoring
+      - proxy_net
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+  minio:
+    networks:
+      - monitoring
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+  postgres:
+    networks:
+      - monitoring
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+  redis:
+    networks:
+      - monitoring
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+  gotrue:
+    networks:
+      - monitoring
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+  appflowy_cloud:
+    networks:
+      - monitoring
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+  appflowy_worker:
+    networks:
+      - monitoring
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+  appflowy_web:
+    networks:
+      - monitoring
+    labels:
+      logging_jobname: "appflowy-logs"
+      logging: "promtail"
+
+networks:
+  monitoring:
+    external: true
+  proxy_net:
+    external: true

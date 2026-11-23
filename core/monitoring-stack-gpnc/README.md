@@ -44,6 +44,8 @@ So for every other stack in this repository, attaching to `monitoring_net` is ef
 
 This stack **does** ship its own `docker-compose.override.yml`, but for a different reason than everyone else's: it attaches `grafana` (only) to `proxy_net`, so the dashboard can be reverse-proxied by [proxy-stack](../proxy-stack/README.md) under a custom domain instead of, or in addition to, its direct host port. `prometheus`, `alertmanager`, `redis`, and the rest intentionally stay off `proxy_net` — see [Configuration & Environment Variables](#configuration--environment-variables) for their loopback-binding options instead.
 
+> **Deployment path:** the compose file bind-mounts `./configs/...` and `./dashboards/...`, so the Git clone must live under the host-mounted Periphery root. On redserver that is `/opt/stacks/monitoring-stack-gpnc`; do not point `clone_path` at a container-only directory.
+
 ### Pull metrics locally, pull metrics remotely, push logs everywhere
 
 Metrics use a pull model: Prometheus scrapes `node-exporter` and `cadvisor` on the local host directly, and *also* scrapes the equivalent exporters running on remote/edge nodes via hardcoded `static_configs` targets reached over the Tailscale mesh (e.g. `100.64.0.2:9100`, `100.64.0.2:8080`, labeled `instance: crimsonserver`). See [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) for the lightweight agent deployed on those remote nodes. Logs use the opposite model: Promtail instances (local, and the ones bundled into every other stack via their override layer) push log streams into Loki.

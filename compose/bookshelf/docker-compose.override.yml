@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  calibre-web:
+    networks:
+      - monitoring_net
+      - proxy_net
+    labels:
+      logging_jobname: "bookshelf"
+      logging: "promtail"
+
+  lazylibrarian:
+    networks:
+      - monitoring_net
+      - proxy_net
+    labels:
+      logging_jobname: "bookshelf"
+      logging: "promtail"
+
+networks:
+  proxy_net:
+    external: true

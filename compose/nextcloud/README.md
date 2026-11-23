@@ -23,7 +23,7 @@ Ensure you set a strong `POSTGRES_PASSWORD`. The other variables (like the port 
 
 ### 2\. Configure Local Monitoring (Optional)
 
-If you are using a logging stack like Promtail/Loki, create a `docker-compose.override.yml` file to inject your monitoring network and labels without polluting the main Git repository:
+If you are using a logging stack like Promtail/Loki, the `docker-compose.override.yml` file is versioned in Git and injects the monitoring network and labels:
 
 ```yaml
 version: '3.8'

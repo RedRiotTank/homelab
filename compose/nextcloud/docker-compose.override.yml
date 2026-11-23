@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  nextcloud-db:
+    networks:
+      - default
+      - monitoring
+    labels:
+      logging_jobname: "nextcloud-logs"
+      logging_component: "database"
+      logging: "promtail"
+
+  nextcloud:
+    networks:
+      - default
+      - monitoring
+      - proxy_net
+    labels:
+      logging_jobname: "nextcloud-logs"
+      logging_component: "app"
+      logging: "promtail"
+
+networks:
+  monitoring:
+    external: true
+  proxy_net:
+    external: true

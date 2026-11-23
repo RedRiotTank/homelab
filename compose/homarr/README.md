@@ -6,7 +6,7 @@ A lightweight, customizable, and containerized dashboard for your homelab servic
 
 - **`docker-compose.yml`**: The core, portable configuration for the Homarr service.
 - **`.env.example`**: Template for required environment variables (encryption secrets).
-- **`docker-compose.override.yml`**: Local override for injecting the Promtail/Loki `monitoring` network dynamically (ignored by Git).
+- **`docker-compose.override.yml`**: Override for injecting the Promtail/Loki `monitoring` network dynamically (versioned in Git).
 - **`appdata/`**: Directory containing the persistent database, Redis cache, and configurations. Strictly ignored by Git to prevent data leaks.
 
 ## Setup & Deployment

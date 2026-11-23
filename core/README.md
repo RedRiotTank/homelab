@@ -76,6 +76,23 @@ For a secondary/edge node: **[tailscale-client](./tailscale-client/)** first (to
 
 Each stack's own README documents its specific `.env` setup, override file, and verification steps — this document only covers how they fit together.
 
+## Deployment Layout
+
+Komodo clones every Git-managed stack into the Periphery root, which is mounted on the host:
+
+- **redserver:** `/opt/stacks/<stack>`
+- **crimsonserver:** `/opt/stacks/<stack>` (after the Periphery root alignment)
+
+The stack's `run_directory` points at `core/<stack>` or `compose/<stack>` inside that clone. The generated `.env` lives in the run directory and is written by Komodo from the Stack Environment; it is never edited by hand.
+
+Persistent state lives outside the clone:
+
+- `/opt/core/<stack>` for infrastructure stacks.
+- `/opt/compose/<stack>` for application stacks.
+- Named Docker volumes for internal state that should stay host-path-agnostic.
+
+`/home/deployer/homelab` is the developer clone used for commits and pushes; Komodo does not deploy from it directly. Overrides are versioned in Git next to the base compose file. Host-based stacks (`arr-stack`, `portfolio`, `pseudorandomometricsequencesapi`) are the documented exception: they set `files_on_host` and live entirely under `/opt`.
+
 ## Conventions Shared Across `core/` Stacks
 
 - **Env-driven configuration:** every stack ships a `.env.example`; real `.env` files are git-ignored (see [.gitignore](../.gitignore)).

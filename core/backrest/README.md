@@ -62,6 +62,10 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 
 > ⚠️ **Recursive Backup Protection:** If `BACKREST_REPO_DIR` lives inside any of the source trees (for example, inside `/srv`), explicitly add that path to the exclusion list (e.g., `/backup/srv/backups/**`) to prevent Restic from backing up its own repository in an infinite loop.
 
+> **Reproducible clones:** Komodo clones are disposable copies of Git repositories. They live under `/opt/stacks/<stack>` on the host; exclude `/backup/opt/stacks` from the Core plans so snapshots do not duplicate the repo.
+
+> **Vaultwarden:** its live data is at `/opt/core/vaultwarden/vw-data`, covered by `HOST_OPT_DIR`; the pre-backup hook still produces the consistent SQLite dump and copies attachments/keys.
+
 ## Deployment & Operational Commands
 
 ### Prerequisites

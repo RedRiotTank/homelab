@@ -7,7 +7,7 @@ A fully containerized, secure, and production-ready deployment of AppFlowy Cloud
 - **`docker-compose.yml`**: The core, portable configuration for all AppFlowy services.
 - **`.env.example`**: Template for required environment variables (domains, secrets, and database credentials).
 - **`nginx/`**: Directory containing Nginx configurations and SSL certificates.
-- **`docker-compose.override.yml`**: Local override for injecting the Promtail/Loki monitoring stack (ignored by Git by default).
+- **`docker-compose.override.yml`**: Override for injecting the Promtail/Loki monitoring stack (versioned in Git).
 - **Volumes**: Data for `postgres_data` and `minio_data` are stored in named Docker volumes and are strictly ignored by Git to prevent data leaks.
 
 ## Setup & Deployment
