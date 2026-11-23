@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(openssl rand *)",
-      "Bash(sudo git status)"
-    ]
-  }
-}

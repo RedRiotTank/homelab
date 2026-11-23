@@ -19,33 +19,28 @@ scrape_configs:
       - targets: [ 'localhost:9090' ]
         labels:
           container: 'prometheus'
-          instance: 'redserver'
 
   - job_name: alertmanager
     static_configs:
       - targets: [ 'alertmanager:9093' ]
         labels:
           container: 'alertmanager'
-          instance: 'redserver'
 
+  # Local exporters plus any remote edge-node exporters listed in
+  # /etc/prometheus/targets/node-exporter.yml. That file is local and is not
+  # committed; see targets/README.md.
   - job_name: node-exporter
     static_configs:
       - targets: [ 'node-exporter:9100' ]
         labels:
           container: 'node-exporter'
-          instance: 'redserver'
-      - targets: [ '100.64.0.2:9100' ]
-        labels:
-          container: 'node-exporter'
-          instance: 'crimsonserver'
+    file_sd_configs:
+      - files: [ '/etc/prometheus/targets/node-exporter.yml' ]
 
   - job_name: cadvisor
     static_configs:
       - targets: [ 'cadvisor:8080' ]
         labels:
           container: 'cadvisor'
-          instance: 'redserver'
-      - targets: [ '100.64.0.2:8080' ]
-        labels:
-          container: 'cadvisor'
-          instance: 'crimsonserver'
+    file_sd_configs:
+      - files: [ '/etc/prometheus/targets/cadvisor.yml' ]

@@ -136,7 +136,7 @@ Instead of internal traffic going out to the public internet and bouncing back (
 
 - Go to your [AdGuard Home](../adguard/README.md) dashboard.
 - Navigate to **Filters -> DNS Rewrites**.
-- Add a rewrite for your domain (e.g., `*.example.com`) pointing directly to the **private internal IP** of the server hosting this proxy stack (e.g., `192.168.1.X`).
+- Add a rewrite for your domain (e.g., `*.example.com`) pointing directly to the **private internal IP** of the server hosting this proxy stack (e.g., `<lan-ip>`).
 - _Result:_ When you are on your local network or connected via Tailscale, traffic flows directly to the server, never touching the public internet.
 
 ### NPM Access Lists (Whitelisting)
@@ -144,6 +144,6 @@ Instead of internal traffic going out to the public internet and bouncing back (
 To block public access to your private services, use Nginx Proxy Manager's **Access Lists**:
 
 - In NPM, go to **Access Lists** and create one named "Private Local & VPN Only".
-- Under the **Access** tab, set `allow` rules for your private subnets (e.g., `192.168.1.0/24` for LAN, `100.64.0.0/10` for Tailscale).
+- Under the **Access** tab, set `allow` rules for your private subnets (for example your LAN CIDR and your VPN/tailnet CIDR).
 - Apply this Access List to your private proxy hosts.
 - _Result:_ If someone tries to access your service from a public IP, NPM will block them with a `403 Forbidden` error, but you will still access it seamlessly and securely with a valid SSL certificate.

@@ -10,7 +10,7 @@ services:
       - BACKREST_CONFIG=/config/config.json
       - XDG_CACHE_HOME=/cache
       - TMPDIR=/tmp
-      - TZ=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-UTC}
     volumes:
       # Internal state, cache and config
       - backrest_data:/data
@@ -19,10 +19,10 @@ services:
       - backrest_tmp:/tmp
 
       # Cloud storage credentials (rclone)
-      - "${HOST_RCLONE_CONFIG_DIR:-/home/deployer/.config/rclone}:/root/.config/rclone:ro"
+      - "${HOST_RCLONE_CONFIG_DIR:-/path/to/.config/rclone}:/root/.config/rclone:ro"
 
       # Backup sources (read-only)
-      - "${HOST_HOMELAB_DIR:-/home/deployer/homelab}:/backup/homelab:ro"
+      - "${HOST_HOMELAB_DIR:-/path/to/homelab}:/backup/homelab:ro"
       - "${HOST_DOCKER_VOLUMES_DIR:-/var/lib/docker/volumes}:/backup/docker_volumes:ro"
       - "${HOST_OPT_DIR:-/opt}:/backup/opt:ro"
       - "${HOST_SRV_DIR:-/srv}:/backup/srv:ro"

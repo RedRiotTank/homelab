@@ -1,0 +1,6 @@
+# Copy to node-exporter.yml and add your edge nodes.
+# Use an address reachable from the Prometheus container.
+- targets: [ '<edge-node>:9100' ]
+  labels:
+    container: node-exporter
+    instance: '<edge-node-name>'

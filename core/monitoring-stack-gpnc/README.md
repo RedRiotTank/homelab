@@ -26,9 +26,9 @@ The central observability backbone for the homelab: metrics collection (Promethe
    (local)          (local)          │ (webhook UI)       │      (local docker    sidecars via override,
                                      └────────────────────┘        containers)     e.g. adguard, backrest,
    ▼                  ▼                                                            headscale, proxy-stack,
-[node-exporter]   [cadvisor]  ◄── over Tailscale (100.64.x.x) ─── monitoring-agent-gpnc on remote/edge nodes
- @100.64.0.2       @100.64.0.2
- (crimsonserver)   (crimsonserver)
+[node-exporter]   [cadvisor]  ◄── over Tailscale (<tailnet-ip>) ─── monitoring-agent-gpnc on remote/edge nodes
+ @<edge-node-tailnet-ip>       @<edge-node-tailnet-ip>
+ (edge-node)   (edge-node)
 ```
 
 ### Shared `monitoring` network
@@ -44,11 +44,11 @@ So for every other stack in this repository, attaching to `monitoring_net` is ef
 
 This stack **does** ship its own `docker-compose.override.yml`, but for a different reason than everyone else's: it attaches `grafana` (only) to `proxy_net`, so the dashboard can be reverse-proxied by [proxy-stack](../proxy-stack/README.md) under a custom domain instead of, or in addition to, its direct host port. `prometheus`, `alertmanager`, `redis`, and the rest intentionally stay off `proxy_net` — see [Configuration & Environment Variables](#configuration--environment-variables) for their loopback-binding options instead.
 
-> **Deployment path:** the compose file bind-mounts `./configs/...` and `./dashboards/...`, so the Git clone must live under the host-mounted Periphery root. On redserver that is `/opt/stacks/monitoring-stack-gpnc`; do not point `clone_path` at a container-only directory.
+> **Deployment path:** the compose file bind-mounts `./configs/...` and `./dashboards/...`. Clone the stack to a host directory that is accessible to the Docker daemon, or adjust the bind paths in the compose file for your own layout.
 
 ### Pull metrics locally, pull metrics remotely, push logs everywhere
 
-Metrics use a pull model: Prometheus scrapes `node-exporter` and `cadvisor` on the local host directly, and *also* scrapes the equivalent exporters running on remote/edge nodes via hardcoded `static_configs` targets reached over the Tailscale mesh (e.g. `100.64.0.2:9100`, `100.64.0.2:8080`, labeled `instance: crimsonserver`). See [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) for the lightweight agent deployed on those remote nodes. Logs use the opposite model: Promtail instances (local, and the ones bundled into every other stack via their override layer) push log streams into Loki.
+Metrics use a pull model: Prometheus scrapes `node-exporter` and `cadvisor` on the local host directly, and *also* scrapes remote/edge-node exporters listed in local target files under `configs/prometheus/targets/`. Those files are not committed because they normally contain private hostnames or IP addresses; see [`configs/prometheus/targets/README.md`](configs/prometheus/targets/README.md). [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) is the lightweight agent deployed on those remote nodes. Logs use the opposite model: Promtail instances (local, and the ones bundled into every other stack via their override layer) push log streams into Loki.
 
 ### Alerting defaults to a safe no-op channel
 
@@ -110,10 +110,10 @@ monitoring-stack-gpnc/
 | `GRAFANA_DOMAIN` | `monitoring.yourdomain.com` | Used for `GF_SERVER_DOMAIN`. |
 | `MONITORING_CPUS` | `0.5` | Per-service CPU limit (applied uniformly). |
 | `MONITORING_MEM_LIMIT` | `512m` | Per-service memory limit (applied uniformly). |
-| `TIMEZONE` | `Europe/Madrid` | Reference timezone for the stack (informational). |
-| `GRAFANA_PORT` / `PROMETHEUS_PORT` / `ALERTMANAGER_PORT` / `ALERT_RECEIVER_PORT` / `REDIS_PORT` / `LOKI_PORT` | unset (exposed on all interfaces by default) | Optional — set to `127.0.0.1:<port>` to restrict to localhost when running behind [proxy-stack](../proxy-stack/README.md). |
+| `GRAFANA_PORT` / `PROMETHEUS_PORT` / `ALERTMANAGER_PORT` / `ALERT_RECEIVER_PORT` / `REDIS_PORT` | `127.0.0.1:<port>` | Host bindings for management ports. Keep them on loopback when running behind [proxy-stack](../proxy-stack/README.md). |
+| `LOKI_PORT` | `3100` | Loki push/query port. It must be reachable from every Promtail instance; restrict access with a private network or firewall. |
 | `GRAFANA_DATA_VOLUME` / `PROMETHEUS_DATA_VOLUME` / `LOKI_DATA_VOLUME` | `monitoring-stack-gpnc_grafana-data` / `..._prometheus-data` / `..._loki-data` | Names of the pre-existing **external** volumes (see prerequisite below). |
-| `HOST_STACKS_PATH` / `CONTAINER_STACKS_PATH` | `/opt` | Host path where compose projects live (informational/portability). |
+| `PROMETHEUS_TARGETS_DIR` | `./configs/prometheus/targets` | Host directory mounted at `/etc/prometheus/targets` for remote scrape targets. Point it outside the repo to keep private addresses out of Git. |
 
 ## Deployment & Operational Commands
 
@@ -163,7 +163,7 @@ make open    # opens http://localhost:3000/ (Grafana)
 ### 5. Verify the deployment
 
 - **Grafana datasources:** `http://<host>:3000` (or your domain) → Connections → Data sources. Prometheus, Alertmanager, and Loki should all show green/working.
-- **Prometheus targets:** `http://<host>:9090/targets` → confirm `prometheus`, `alertmanager`, `node-exporter` (local + `crimsonserver`), and `cadvisor` (local + `crimsonserver`) are all `UP`.
+- **Prometheus targets:** `http://<host>:9090/targets` → confirm `prometheus`, `alertmanager`, the local `node-exporter`/`cadvisor`, and every edge-node target you configured are all `UP`.
 - **Dashboards:** the three pre-provisioned dashboards (Node Metrics, Container Metrics, Log Search) should appear automatically in Grafana without manual import.
 
 ## Specific Notes
@@ -181,15 +181,16 @@ To activate one: fill in its placeholder credentials (API keys, webhook URLs, to
 
 ### Scraping Remote Nodes
 
-New [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) nodes are **not** auto-discovered — Prometheus uses static targets. To register a new remote node, add entries to `configs/prometheus/prometheus.yml` under the `node-exporter` and `cadvisor` jobs, following the existing pattern:
+New [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) nodes are **not** auto-discovered. Prometheus reads remote targets from local files:
+
+- `configs/prometheus/targets/node-exporter.yml`
+- `configs/prometheus/targets/cadvisor.yml`
+
+Copy the matching `*.yml.example` file, add one target group per edge node, and reload/restart Prometheus. The real files are ignored by Git because they normally contain private hostnames or IPs. Use an address reachable from the Prometheus container (for example a VPN/tailnet address) and a label such as `instance: edge-node-1` for each node.
 
 ```yaml
-  - job_name: node-exporter
-    static_configs:
-      - targets: [ 'node-exporter:9100' ]
-        labels: { container: 'node-exporter', instance: 'redserver' }
-      - targets: [ '<new-node-tailscale-ip>:9100' ]
-        labels: { container: 'node-exporter', instance: '<new-node-name>' }
+- targets: [ '<edge-node>:9100' ]
+  labels:
+    container: node-exporter
+    instance: '<edge-node-name>'
 ```
-
-Reach the node over its Tailscale IP (not its LAN IP), matching how `crimsonserver` is reached at `100.64.0.2`. Reload Prometheus (`docker compose restart prometheus` or a `SIGHUP`/reload-endpoint call) after editing.

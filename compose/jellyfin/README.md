@@ -26,11 +26,14 @@ If using Promtail/Loki, define a `docker-compose.override.yml` to attach the con
 
 ### 3\. Deploy
 
-Bash
-
-    docker compose up -d 
+```bash
+docker compose up -d
+```
 
 Backups & Disaster Recovery
 ---------------------------
 
-Configured for automated, surgical backups via `backup-manager` (excluding high-churn volatile caches and regenerable metadata).
+Back up the config, cache, and media directories configured through `.env`.
+Regenerable metadata and transcode caches can be excluded to keep snapshots
+small. [`core/backrest`](../../core/backrest/) is an optional Restic-based
+example.

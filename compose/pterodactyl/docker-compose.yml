@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
     environment:
       - APP_URL=${APP_URL}
-      - APP_TIMEZONE=${TZ:-Europe/Madrid}
+      - APP_TIMEZONE=${TZ:-UTC}
       - APP_SERVICE_AUTHOR=${APP_SERVICE_AUTHOR}
       - APP_ENV=production
       - APP_ENVIRONMENT_ONLY=false
@@ -64,7 +64,7 @@ services:
     restart: unless-stopped
     tty: true
     environment:
-      - TZ=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-UTC}
       - WINGS_UID=${WINGS_UID:-988}
       - WINGS_GID=${WINGS_GID:-988}
       - WINGS_USERNAME=${WINGS_USERNAME:-pterodactyl}

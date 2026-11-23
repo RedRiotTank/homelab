@@ -53,9 +53,7 @@ networks:
 
 Once configured, deploy the stack:
 
-Bash
-
-```
+```bash
 docker compose up -d
 ```
 
@@ -63,11 +61,10 @@ The service will be accessible locally at `http://127.0.0.1:8282` (or the port d
 
 ## Backups & Disaster Recovery
 
-This deployment is fully compatible with the centralized `backup-manager`.
+Back up the Nextcloud data directory, the database, and the application config.
+Use database-consistent snapshots while the stack is running, or stop the
+containers before copying files. [`core/backrest`](../../core/backrest/) is an
+optional Restic-based example.
 
--   **Backups:** Handled dynamically via cron jobs in the backup-manager container.
-    
--   **Recovery:** If data corruption occurs, refer to the `NEXTCLOUD_DISASTER_RECOVERY.md` runbook located in the `/opt/backup-manager/` directory for automated restoration scripts.
-    
-
-```
+For recovery, restore the data directories before starting the containers
+again.

@@ -63,6 +63,7 @@ services:
       - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./configs/prometheus/recording-rules.yml:/etc/prometheus/recording-rules.yml
       - ./configs/prometheus/alerting-rules.yml:/etc/prometheus/alerting-rules.yml
+      - ${PROMETHEUS_TARGETS_DIR:-./configs/prometheus/targets}:/etc/prometheus/targets:ro
       - prometheus-data:/prometheus
     depends_on:
       - alertmanager

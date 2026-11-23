@@ -1,6 +1,6 @@
 # Pterodactyl
 
-Self-hosted game server management platform, powered by [Pterodactyl](https://pterodactyl.io): a web **Panel** for provisioning, configuring, and administering game servers, backed by **Wings**, the node daemon that actually talks to Docker to create, start, stop, and monitor each game server's container. This stack runs both halves — Panel and Wings — on the same host (`CrimsonServer`), making that host a self-contained Pterodactyl node.
+Self-hosted game server management platform, powered by [Pterodactyl](https://pterodactyl.io): a web **Panel** for provisioning, configuring, and administering game servers, backed by **Wings**, the node daemon that actually talks to Docker to create, start, stop, and monitor each game server's container. This stack runs both halves — Panel and Wings — on the same host, making that host a self-contained Pterodactyl node.
 
 ## Architecture & Design Decisions
 
@@ -39,7 +39,7 @@ Unlike some community compose files, this stack does not run a separate `panel-c
 - **[proxy-stack](../../core/proxy-stack/README.md)** — Nginx Proxy Manager terminates TLS and routes `APP_URL` to the `panel` container over the shared external `proxy_net` network, attached via `docker-compose.override.yml`. Wings is **not** attached to `proxy_net` — see [Architecture & Design Decisions](#architecture--design-decisions).
 - **[monitoring-stack-gpnc](../../core/monitoring-stack-gpnc/README.md)** — all four containers ship logs to the central Promtail/Loki pipeline via the external `monitoring_net` network (actual Docker network name: `monitoring`), attached through `docker-compose.override.yml`.
 - **[backrest](../../core/backrest/README.md)** — all persistent state lives under host bind mounts at `/opt/compose/pterodactyl/**`, which falls inside Backrest's `HOST_OPT_DIR` (`/opt`) backup source; no additional Backrest plan path is required, but verify it isn't caught by any exclusion rule. Game-server data itself can grow large — consider whether `WINGS_DATA_DIR` belongs in the "Bulk / Heavy Data" backup tier described in Backrest's README rather than the daily "Configs & State" tier.
-- **[komodo](../../core/komodo/README.md)** — intended to be the normal way this stack is deployed/redeployed on `CrimsonServer`, via [komodo-periphery](../../core/komodo-periphery/README.md) running on that node.
+- **[komodo](../../core/komodo/README.md)** — intended to be the normal way this stack is deployed/redeployed on that host, via [komodo-periphery](../../core/komodo-periphery/README.md) running on that node.
 
 ## File Structure
 
@@ -49,7 +49,7 @@ Unlike some community compose files, this stack does not run a separate `panel-c
 | `docker-compose.override.yml` | Attaches `panel` to **both** `proxy_net` (ingress) and `monitoring_net` (logging); attaches `database`, `cache`, and `wings` to `monitoring_net` only. Injects Promtail logging labels on all four. **Not optional** — this file is required for the Panel to be reachable at all, since `proxy_net` lives here instead of the base file. |
 | `.env.example` | Template for every environment variable consumed by both compose files. |
 
-> **Consistent with `core/` convention:** like [vaultwarden](../../core/vaultwarden/README.md) and [adguard](../../core/adguard/README.md), `proxy_net` lives in the override, not the base `docker-compose.yml` — the base file stays infrastructure-agnostic. If the monitoring stack isn't deployed on `CrimsonServer`, don't omit the whole override — instead edit it to drop the four `monitoring_net` entries and their `logging*` labels, keeping `proxy_net` on `panel`.
+> **Consistent with `core/` convention:** like [vaultwarden](../../core/vaultwarden/README.md) and [adguard](../../core/adguard/README.md), `proxy_net` lives in the override, not the base `docker-compose.yml` — the base file stays infrastructure-agnostic. If the monitoring stack isn't deployed on that host, don't omit the whole override — instead edit it to drop the four `monitoring_net` entries and their `logging*` labels, keeping `proxy_net` on `panel`.
 
 ## Configuration & Environment Variables
 
@@ -58,7 +58,7 @@ Unlike some community compose files, this stack does not run a separate `panel-c
 | `PANEL_VERSION` / `WINGS_VERSION` | `latest` | Image tags for the Panel and Wings. |
 | `MARIADB_VERSION` | `11` | Image tag for the database. |
 | `REDIS_VERSION` | `alpine` | Image tag for the cache. |
-| `TZ` | `Europe/Madrid` | Container timezone; also sets the Panel's `APP_TIMEZONE`. |
+| `TZ` | `UTC` | Container timezone; also sets the Panel's `APP_TIMEZONE`. |
 | `APP_URL` | _(required)_ | Full HTTPS URL the Panel is reached at; must match the Nginx Proxy Manager host entry. |
 | `APP_SERVICE_AUTHOR` | _(required)_ | Contact address shown in system emails and support links. |
 | `TRUSTED_PROXIES` | `*` | IPs/CIDRs trusted to set `X-Forwarded-*` headers; safe as `*` since `proxy_net` has no other ingress path. |
@@ -87,7 +87,7 @@ Unlike some community compose files, this stack does not run a separate `panel-c
 
 ## Deployment & Operational Commands
 
-### 1. Prerequisite Setup on CrimsonServer
+### 1. Prerequisite Setup on the Edge Node
 
 Create the host directories backing every bind mount before first deploy:
 
@@ -118,12 +118,12 @@ docker network create proxy_net
 
 **Option A: GitOps via Komodo (Recommended)**
 
-1. Add this repository to your Komodo instance, targeting the `komodo-periphery` agent running on `CrimsonServer`.
+1. Add this repository to your Komodo instance, targeting the `komodo-periphery` agent running on the edge node.
 2. Set every environment variable listed above in the Komodo UI's Stack environment editor — see the summary at the end of this document for the exact list to populate.
 3. In **File Paths**, list **both** `docker-compose.yml` and `docker-compose.override.yml` — the override is required since it carries the `proxy_net` attachment.
 4. Click Deploy.
 
-**Option B: Manual CLI Deployment (on CrimsonServer)**
+**Option B: Manual CLI Deployment (on the edge node)**
 
 ```bash
 cp .env.example .env
@@ -147,7 +147,7 @@ docker compose exec panel php artisan p:user:make
 ### 4. Create a Node and Pair Wings
 
 1. In the Panel web UI, go to **Admin → Locations** and create at least one location.
-2. Go to **Admin → Nodes → Create New** and configure it for `CrimsonServer`:
+2. Go to **Admin → Nodes → Create New** and configure it for that node:
    - **FQDN**: a domain/IP Wings is reachable at (the node's `WINGS_API_PORT`, not routed through NPM — see [Architecture & Design Decisions](#architecture--design-decisions)).
    - **Communicate Over SSL**: enabled (Wings serves its own certificate on `:8080`).
    - **Daemon Server File Directory**: set to the exact value of `WINGS_DATA_DIR` (default `/opt/compose/pterodactyl/wings/data`).
@@ -178,8 +178,8 @@ Visit `APP_URL` to confirm the Panel login page loads, log in with the admin acc
 ### Post-Deployment Access
 
 - **Panel Web UI:** exclusively via [Nginx Proxy Manager](../../core/proxy-stack/README.md), proxying to the container name `panel` on port `80`.
-- **Wings Daemon API / Console:** `https://<CrimsonServer-FQDN>:${WINGS_API_PORT}`, reached directly by the Panel and by admin browsers for the live console — not proxied by NPM.
-- **SFTP File Access:** `sftp://<CrimsonServer-FQDN>:${WINGS_SFTP_PORT}`, per-server credentials shown in each server's Panel page.
+- **Wings Daemon API / Console:** `https://<edge node-FQDN>:${WINGS_API_PORT}`, reached directly by the Panel and by admin browsers for the live console — not proxied by NPM.
+- **SFTP File Access:** `sftp://<edge node-FQDN>:${WINGS_SFTP_PORT}`, per-server credentials shown in each server's Panel page.
 
 ## Specific Notes
 
@@ -195,4 +195,4 @@ These two variables appear **twice** on their respective volume lines in `docker
 
 ### Game Server Ports
 
-Each game server you create gets its own port allocation (configured per-Node under **Admin → Nodes → Allocations**, then assigned per-server). Those ports are published directly on `CrimsonServer` by the individual server containers Wings creates — they are independent of, and in addition to, `WINGS_API_PORT`/`WINGS_SFTP_PORT`, and need their own firewall/NAT rules opened on the host as you allocate them.
+Each game server you create gets its own port allocation (configured per-Node under **Admin → Nodes → Allocations**, then assigned per-server). Those ports are published directly on the host by the individual server containers Wings creates — they are independent of, and in addition to, `WINGS_API_PORT`/`WINGS_SFTP_PORT`, and need their own firewall/NAT rules opened on the host as you allocate them.

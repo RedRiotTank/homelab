@@ -1,0 +1,6 @@
+# Copy to cadvisor.yml and add your edge nodes.
+# Use an address reachable from the Prometheus container.
+- targets: [ '<edge-node>:8080' ]
+  labels:
+    container: cadvisor
+    instance: '<edge-node-name>'

@@ -42,8 +42,8 @@ This stack is attached to the homelab's shared infrastructure entirely through `
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `HOST_CONFIG_PATH` | `/opt/core/headscale/config` | Host directory mounted to `/etc/headscale` containing Headscale's `config.yaml`. |
-| `HEADPLANE_CONFIG_DIR` | `/opt/core/headscale/headplane-config` | Host directory whose `config.yaml` is mounted to `/etc/headplane/config.yaml`. |
+| `HOST_CONFIG_PATH` | `/opt/headscale/config` | Host directory mounted to `/etc/headscale` containing Headscale's `config.yaml`. |
+| `HEADPLANE_CONFIG_DIR` | `/opt/headscale/headplane-config` | Host directory whose `config.yaml` is mounted to `/etc/headplane/config.yaml`. |
 
 Before starting the stack, prepare both configuration files on the host.
 
@@ -64,7 +64,7 @@ Create the directory defined by `HOST_CONFIG_PATH` and place a `config.yaml` ins
     override_local_dns: true
     nameservers:
       global:
-        - 100.64.0.1 # Routes VPN DNS queries to AdGuard Home
+        - <tailnet-dns-ip> # Routes VPN DNS queries to AdGuard Home
   ```
 
 ### 2. Headplane Configuration (`config.yaml`)

@@ -1,6 +1,6 @@
 # Komodo Periphery (Secondary Node Agent)
 
-This directory contains the standalone Komodo Periphery agent designed for secondary or edge nodes in the homelab infrastructure (e.g., `CrimsonServer`).
+This directory contains the standalone Komodo Periphery agent designed for secondary or edge nodes in the homelab infrastructure (e.g., `edge node`).
 
 For the primary orchestration stack containing the Web UI, API, and Database, refer to the [Komodo Core Stack](../komodo/README.md).
 
@@ -36,7 +36,7 @@ Unlike the [primary Komodo stack](../komodo/README.md), this directory deploys a
  Managed containers on this host
 ```
 
-**Security note:** Binding to `0.0.0.0` by default makes the agent reachable from *any* network interface on the host, not just the one facing the primary Core server. In environments where the host is also connected to an untrusted LAN, restrict exposure by setting `PERIPHERY_BIND_IP` to the host's Tailscale interface IP (e.g., `100.64.0.x`) so only traffic arriving over the VPN mesh can reach the agent.
+**Security note:** Binding to `0.0.0.0` by default makes the agent reachable from *any* network interface on the host, not just the one facing the primary Core server. In environments where the host is also connected to an untrusted LAN, restrict exposure by setting `PERIPHERY_BIND_IP` to the host's Tailscale interface IP (e.g., `<tailnet-ip>`) so only traffic arriving over the VPN mesh can reach the agent.
 
 ## Service Interconnections & Dependencies
 
@@ -90,7 +90,7 @@ Once the container is running, the node must be authorized in the primary Komodo
 
 1. Open the Komodo Web UI on the primary server.
 2. Navigate to **Servers** > **Add Server**.
-3. Set the Address to the secondary node's reachable IP and port (e.g., `http://100.64.0.2:8120` over Tailscale, or the LAN IP).
+3. Set the Address to the secondary node's reachable IP and port (e.g., `http://<edge-node-tailnet-ip>:8120` over Tailscale, or the LAN IP).
 4. Enter the exact `KOMODO_PASSKEY` from the `.env` file.
 5. Save and verify the server status turns green (Healthy).
 

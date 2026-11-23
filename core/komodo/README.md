@@ -44,8 +44,8 @@ Both path variables can be overridden in `.env` to relocate the stacks directory
 
 ### Node Topology
 
-- **Primary Node (RedServer):** Runs the full stack (Core + Periphery + MongoDB) via this directory.
-- **Secondary Nodes (CrimsonServer):** Only require the lightweight agent, pointing back to the primary Core API using a shared `KOMODO_PASSKEY`. See the [Komodo Periphery Agent documentation](../komodo-periphery/README.md) for secondary node deployment.
+- **Primary node:** Runs the full stack (Core + Periphery + MongoDB) via this directory.
+- **Edge nodes:** Only require the lightweight agent, pointing back to the primary Core API using a shared `KOMODO_PASSKEY`. See the [Komodo Periphery Agent documentation](../komodo-periphery/README.md) for edge-node deployment.
 
 ### The Override Is Committed, But Komodo Must Not Manage Itself
 

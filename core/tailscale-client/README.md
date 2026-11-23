@@ -26,7 +26,7 @@ Every other stack's `docker-compose.override.yml` in this repo exists to attach 
 │               ▼                                                          │   │
 │     [ tailscale0 tunnel interface ]  ── registers with ──▶  Headscale   │   │
 │               │                                            control server│   │
-│               │ 100.64.x.x                                               │   │
+│               │ <tailnet-ip>                                               │   │
 │               ▼                                                          │   │
 │     Routable over the private tailnet mesh                               │   │
 │                                                                          │   │
@@ -39,7 +39,7 @@ Every other stack's `docker-compose.override.yml` in this repo exists to attach 
 
 - [headscale](../headscale/README.md) — the control server this client authenticates against. `HEADSCALE_URL` must point at its public/reachable address, and a pre-auth key generated there is required to join without manual web authentication.
 - [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md) — receives this container's logs. Because the container has no Docker network of its own, log shipping relies on the host's local Promtail (or the one bundled in [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md)) reading the Docker socket directly rather than this service reaching Loki over `monitoring_net`.
-- [komodo-periphery](../komodo-periphery/README.md) and [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) — this client is typically deployed alongside both on secondary/edge nodes, since they rely on the tailnet IP this container establishes (e.g. `100.64.0.2`) for the primary node to reach them remotely.
+- [komodo-periphery](../komodo-periphery/README.md) and [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) — this client is typically deployed alongside both on secondary/edge nodes, since they rely on the tailnet IP this container establishes (e.g. `<edge-node-tailnet-ip>`) for the primary node to reach them remotely.
 
 ## File Structure
 
@@ -53,7 +53,7 @@ Every other stack's `docker-compose.override.yml` in this repo exists to attach 
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `NODE_HOSTNAME` | _(required)_ | Identifying name for this machine in the Headscale/Headplane dashboard (e.g., `redserver`, `crimsonserver`). |
+| `NODE_HOSTNAME` | _(required)_ | Identifying name for this machine in the Headscale/Headplane dashboard (e.g., `primary-node`, `edge-node`). |
 | `HEADSCALE_URL` | _(required)_ | The Headscale control server's login-server URL (e.g., `https://vpn.example.com`). |
 | `HEADSCALE_AUTHKEY` | _(required)_ | Pre-auth key used to join the tailnet without manual browser authentication. |
 | `CONTAINER_NAME` | `tailscale` | Docker container name. |
@@ -95,4 +95,4 @@ The override is entirely optional:
 
 ### Post-deploy verification
 
-Open the Headplane web UI (see [headscale](../headscale/README.md)). The new node should appear in the device list with a `Connected` status and an assigned `100.64.x.x` tailnet IP within a few seconds of startup.
+Open the Headplane web UI (see [headscale](../headscale/README.md)). The new node should appear in the device list with a `Connected` status and an assigned `<tailnet-ip>` tailnet IP within a few seconds of startup.

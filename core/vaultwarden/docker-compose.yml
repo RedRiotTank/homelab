@@ -8,8 +8,8 @@ services:
       - SIGNUPS_ALLOWED=${SIGNUPS_ALLOWED:-false}
       - ADMIN_TOKEN=${ADMIN_TOKEN}
       - WEBSOCKET_ENABLED=true
-      - TZ=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-UTC}
     volumes:
-      - ${VAULTWARDEN_DATA_DIR:-/opt/core/vaultwarden/vw-data}:/data
+      - ${VAULTWARDEN_DATA_DIR:-/opt/vaultwarden/vw-data}:/data
     # ports:
     #   - "${VAULTWARDEN_PORT:-127.0.0.1:8083}:80"  # Not published: reached via proxy_net through Nginx Proxy Manager, not a host port. Uncomment only for local/debug access.

@@ -7,7 +7,7 @@ services:
     environment:
       - PUID=${PUID:-1001}
       - PGID=${PGID:-1001}
-      - TZ=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-UTC}
       - WEBUI_PORT=8080
       - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT:-6881}
     volumes:
@@ -27,7 +27,7 @@ services:
     environment:
       - PUID=${PUID:-1001}
       - PGID=${PGID:-1001}
-      - TZ=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-UTC}
     volumes:
       - ${SONARR_CONFIG_DIR:-./sonarr/config}:/config
       - ${DATA_ROOT_DIR:-/srv}:/data
@@ -44,7 +44,7 @@ services:
     environment:
       - PUID=${PUID:-1001}
       - PGID=${PGID:-1001}
-      - TZ=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-UTC}
     volumes:
       - ${PROWLARR_CONFIG_DIR:-./prowlarr/config}:/config
     ports:
@@ -59,7 +59,7 @@ services:
     profiles:
       - kitsunarr_enabled
     environment:
-      - TZ=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-UTC}
     ports:
       - "${KITSUNARR_PORT:-4080}:4080"
     volumes:

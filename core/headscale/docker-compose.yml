@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     command: serve
     volumes:
-      - ${HOST_CONFIG_PATH:-/opt/core/headscale/config}:/etc/headscale
+      - ${HOST_CONFIG_PATH:-/opt/headscale/config}:/etc/headscale
       - headscale_data:/var/lib/headscale
     networks:
       - headscale_internal
@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${HEADPLANE_CONFIG_DIR:-/opt/core/headscale/headplane-config}/config.yaml:/etc/headplane/config.yaml
+      - ${HEADPLANE_CONFIG_DIR:-/opt/headscale/headplane-config}/config.yaml:/etc/headplane/config.yaml
     networks:
       - headscale_internal
 

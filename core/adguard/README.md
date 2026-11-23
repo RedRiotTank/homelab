@@ -11,18 +11,18 @@ Setup and local web UI ports (`ADGUARD_SETUP_PORT`, `ADGUARD_WEB_PORT`) are boun
 ```text
              [ VPN / Tailscale Traffic ]       [ Local LAN Traffic ]
                       │                                  │
-      (Original IP: 100.64.0.X hidden by Docker)         │
+      (Original IP: <tailnet-ip> hidden by Docker)         │
                       ▼                                  │
               [ Docker Gateway ]                 (Original IP Kept)
-               (IP: 172.20.0.1)                          │
+               (IP: <docker-gateway-ip>)                          │
                       │                                  │
 +---------------------▼----------------------------------▼--------------------+
 |                         ADGUARD HOME STACK                                |
 |                                                                           |
 |                  [ Custom Filtering Rules Engine ]                        |
 |                                                                           |
-|   Rule 1: If IP is 172.20.0.1           Rule 2: If IP is NOT 172.20.0.1   |
-|   Rewrite to VPN Tunnel (100.64.0.1)    Rewrite to Host IP (192.168.1.X)  |
+|   Rule 1: If IP is <docker-gateway-ip>           Rule 2: If IP is NOT <docker-gateway-ip>   |
+|   Rewrite to VPN Tunnel (<tailnet-dns-ip>)    Rewrite to Host IP (<lan-ip>)  |
 |                                                                           |
 +---------------------┬----------------------------------┬--------------------+
                       │                                  │
@@ -114,16 +114,16 @@ Then check **Query Log** in the AdGuard UI to confirm DNS requests are being rec
 
 To achieve a true **Split-Brain DNS** without exposing the proxy to the public internet, clients need different IP resolutions for the same domain (`*.example.com`).
 
-Because AdGuard runs inside the `proxy_net` Docker network, UDP DNS queries coming from [Headscale](../headscale/README.md) VPN clients (`100.64.x.x`) are Source-NAT'd (SNAT) by the Docker gateway. AdGuard sees these requests as coming from the Docker network gateway (e.g., `172.20.0.1`) rather than the actual Tailscale IP.
+Because AdGuard runs inside the `proxy_net` Docker network, UDP DNS queries coming from [Headscale](../headscale/README.md) VPN clients (`<tailnet-ip>`) are Source-NAT'd (SNAT) by the Docker gateway. AdGuard sees these requests as coming from the Docker network gateway (e.g., `<docker-gateway-ip>`) rather than the actual Tailscale IP.
 
 **The Solution:** DO NOT use the standard "DNS Rewrites" tab, as it overrides everything globally. Instead, use **Custom Filtering Rules** in the AdGuard UI (`Filters -> Custom filtering rules`) to exploit the SNAT behavior:
 
 ```
-! 1. If the client is Docker/Tailscale SNAT (172.20.0.1), return the VPN tunnel IP
-||yourdomain.com^$client=172.20.0.1,dnsrewrite=100.64.0.1
+! 1. If the client is Docker/Tailscale SNAT (<docker-gateway-ip>), return the VPN tunnel IP
+||yourdomain.com^$client=<docker-gateway-ip>,dnsrewrite=<tailnet-dns-ip>
 
 ! 2. For everyone else (e.g., physical LAN clients), return the physical host IP
-||yourdomain.com^$client=~172.20.0.1,dnsrewrite=192.168.1.182
+||yourdomain.com^$client=~<docker-gateway-ip>,dnsrewrite=<host-lan-ip>
 ```
 
-_(Replace `yourdomain.com` and the IPs with your actual environment values. If the Split-DNS breaks after a Docker network recreation, check the AdGuard Query Log to see if the `172.20.0.1` gateway IP has shifted to a different subnet.)_
+_(Replace `yourdomain.com` and the IPs with your actual environment values. If the Split-DNS breaks after a Docker network recreation, check the AdGuard Query Log to see if the `<docker-gateway-ip>` gateway IP has shifted to a different subnet.)_

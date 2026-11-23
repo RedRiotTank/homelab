@@ -1,8 +1,8 @@
-# Recommended configuration for the library generated from the rclone mount.
+# Optional configuration for a library with a local gamelist.xml.
 # Copy to ${RETRO_DATA_DIR}/config/config.yml on the host.
 filesystem:
-  # Do not read the ROMs to compute hashes: the gamelist makes it unnecessary,
-  # and reading 29 GB from Usenet on every scan would be very slow.
+  # Rely on the gamelist instead of hashing every ROM on each scan, which is
+  # slow for large libraries or network mounts.
   skip_hash_calculation: true
   skip_title_id_extraction: true
 

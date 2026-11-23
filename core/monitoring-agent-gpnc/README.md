@@ -1,11 +1,11 @@
 # Monitoring Agent (GPNC)
 
-A lightweight, per-node telemetry agent (cAdvisor + Node Exporter + Promtail) deployed on secondary/edge nodes (e.g. `crimsonserver`) to feed the central [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md) running on the primary node. It carries no dashboards, no storage, and no alerting of its own — it exists purely to expose metrics endpoints and push log streams back to the hub.
+A lightweight, per-node telemetry agent (cAdvisor + Node Exporter + Promtail) deployed on edge nodes to feed the central [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md) running on the primary node. It carries no dashboards, no storage, and no alerting of its own — it exists purely to expose metrics endpoints and push log streams back to the hub.
 
 ## Architecture & Design Decisions
 
 ```text
-┌─────────────────────── Secondary/Edge Node (e.g. crimsonserver) ───────────────────────┐
+┌─────────────────────────────── Edge node ───────────────────────────────┐
 │                                                                                        │
 │   [ cadvisor-${NODE_HOSTNAME} ]  :8080  ────┐                                          │
 │   [ node-exporter-${NODE_HOSTNAME} ] :9100 ─┤  exposed on host ports, no 127.0.0.1 bind│
@@ -13,7 +13,7 @@ A lightweight, per-node telemetry agent (cAdvisor + Node Exporter + Promtail) de
 │   [ promtail-${NODE_HOSTNAME} ] ────────────┼─── pushes logs (LOKI_URL) ────────┐      │
 └─────────────────────────────────────────────┼───────────────────────────────────┼──────┘
                                               │ scraped (pull)                    │ pushed
-                                              ▼ over Tailscale mesh (100.64.x.x)  ▼
+                                              ▼ over Tailscale mesh (<tailnet-ip>)  ▼
                               ┌──────────────────────────────────────────────────────┐
                               │        monitoring-stack-gpnc (primary node)          │
                               │   Prometheus  ◄── scrapes  │  Loki  ◄── receives     │
@@ -22,7 +22,7 @@ A lightweight, per-node telemetry agent (cAdvisor + Node Exporter + Promtail) de
 
 ### Two telemetry models, by design
 
-- **Metrics: pull, over the VPN mesh.** `cadvisor` (`:8080`) and `node-exporter` (`:9100`) are published directly on the host's ports — not bound to `127.0.0.1` — because the central Prometheus on the primary node must be able to scrape them remotely. `prometheus.yml` in [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md) targets this node at its Tailscale IP (e.g. `100.64.0.2:9100`, `100.64.0.2:8080`, labeled `instance: crimsonserver`), not its LAN IP. This means the node running this agent **must** already be joined to the tailnet via [tailscale-client](../tailscale-client/README.md) before the central stack can see it — the ports are intentionally open on all interfaces because the exposure is meant to be reached over the private mesh, not the public internet. If this host also has a public-facing NIC, firewall these ports to the Tailscale interface (see [Specific Notes](#specific-notes)).
+- **Metrics: pull, over the VPN mesh.** `cadvisor` (`:8080`) and `node-exporter` (`:9100`) are published directly on the host's ports — not bound to `127.0.0.1` — because the central Prometheus on the primary node must be able to scrape them remotely. On the central [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md), add this node's reachable address to the local `configs/prometheus/targets/node-exporter.yml` and `cadvisor.yml` files (they are not committed); use a VPN/tailnet address rather than a public or unrelated LAN address. This means the node running this agent **must** already be joined to the tailnet via [tailscale-client](../tailscale-client/README.md) before the central stack can see it — the ports are intentionally open on all interfaces because the exposure is meant to be reached over the private mesh, not the public internet. If this host also has a public-facing NIC, firewall these ports to the Tailscale interface (see [Specific Notes](#specific-notes)).
 - **Logs: push, to the central Loki.** `promtail` here is configured with `LOKI_URL` pointing at the central Loki's Tailscale address (e.g. `http://100.x.x.x:3100/loki/api/v1/push`) and actively ships logs outward. This is the opposite flow from metrics — there is no remote log *pull*.
 
 ### Per-node naming and labeling
@@ -48,7 +48,7 @@ Unlike most other stacks in this repo, there is no `docker-compose.override.yml`
 ## Service Interconnections & Dependencies
 
 - [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md) — the hard dependency: this agent's `cadvisor`/`node-exporter` are scraped by its Prometheus, and its `promtail` pushes logs to its Loki via `LOKI_URL`.
-- [tailscale-client](../tailscale-client/README.md) — required on the same node so a routable `100.64.x.x` tailnet IP exists for the central stack to reach this agent's exposed ports.
+- [tailscale-client](../tailscale-client/README.md) — required on the same node so a routable `<tailnet-ip>` tailnet IP exists for the central stack to reach this agent's exposed ports.
 - [komodo-periphery](../komodo-periphery/README.md) — typically co-located on the same secondary node for remote stack management.
 
 ## File Structure

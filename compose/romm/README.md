@@ -6,12 +6,12 @@ A containerized and secure deployment of RomM, serving as a unified retro gaming
 
 - **`docker-compose.yml`**: The core, portable configuration for RomM and its MariaDB database.
 - **`.env.example`**: Template for required environment variables.
-- **`build_library.py`**: Builds the RomM library from the rclone mount and the community covers (see [BUILD_LIBRARY.md](BUILD_LIBRARY.md)).
-- **`sync_covers.py`**: Mirrors the classifier-assigned covers into the local cover store before the library is rebuilt.
-- **`config.example.yml`**: RomM configuration to use the local `gamelist.xml` and avoid reading the ROMs while scanning.
+- **`config.example.yml`**: Optional RomM configuration that relies on a local `gamelist.xml` and avoids re-reading ROM files while scanning.
 - **`ROMM_LIBRARY_DIR/`**: Generated library (symlinks + gamelist + covers, ignored by Git).
 - **`RETRO_DATA_DIR/database`**: MariaDB data directory (ignored by Git).
 - **`RETRO_DATA_DIR/assets`, `config`, `resources`**: RomM internal data and copied covers (ignored by Git).
+
+Any custom import or cover-generation tooling is environment-specific; keep it outside this repository.
 
 ## Setup & Deployment
 
@@ -24,10 +24,10 @@ nano .env
 ```
 
 Ensure you set strong database passwords, `ROMM_AUTH_SECRET_KEY`, and
-`ROMM_LIBRARY_DIR`. For the rclone library, set `RCLONE_MOUNT_DIR=/mnt/media`
-and generate the tree with `build_library.py` (see
-[BUILD_LIBRARY.md](BUILD_LIBRARY.md)). ScreenScraper is not passed to the
-container: metadata and covers come only from the local `gamelist.xml`.
+`ROMM_LIBRARY_DIR`. If your ROMs live on a network share, set
+`RCLONE_MOUNT_DIR` to the host mount point and generate a `gamelist.xml` with
+your own tooling. ScreenScraper is not passed to the container: metadata and
+covers come only from the local `gamelist.xml`.
 
 ### 2. Configure Local Monitoring (Optional)
 
@@ -59,16 +59,21 @@ docker-compose --env-file .env up -d
 
 The service will be accessible locally at the port defined in your `.env` file (default `8082`).
 
-### 4. Build the library from rclone
+### 4. Library layout
 
-Follow [BUILD_LIBRARY.md](BUILD_LIBRARY.md). The compose file mounts:
+If you mount ROMs from a network share, the compose file exposes:
 
 - `ROMM_LIBRARY_DIR` -> `/romm/library/roms`
-- `RCLONE_MOUNT_DIR` -> `/mnt/media` (for the symlinks)
+- `RCLONE_MOUNT_DIR` -> `/mnt/media` (for symlinks)
+
+RomM can scan that directory directly. A `gamelist.xml` is optional and only
+needed if you want metadata or covers that are not embedded in the ROM files.
 
 ## Backups & Disaster Recovery
 
-This deployment is fully compatible with the centralized `backup-manager`.
+Back up the MariaDB data directory, the RomM config/assets/resources
+directories, and any host paths you mounted into the container. The ROM library
+itself is usually regenerable and can be excluded to keep snapshots small.
 
--   **Backups:** Handled dynamically via cron jobs in the backup-manager container (excluding the heavy `library/` folder).
--   **Recovery:** If data corruption occurs, refer to the `ROMM_DISASTER_RECOVERY.md` runbook located in the `/opt/backup-manager/` directory for automated restoration scripts.
+Use any backup tool you prefer. [`core/backrest`](../../core/backrest/) is an
+optional example based on Restic.

@@ -31,15 +31,16 @@ If your homelab uses an external logging stack, create a `docker-compose.overrid
 
 Once configured, deploy the stack:
 
-Bash
-
-```
+```bash
 docker compose up -d
 ```
 
 ## Backups & Disaster Recovery
 
-This deployment is fully compatible with the centralized `backup-manager`.
+Back up the host paths and named volumes this stack mounts. The compose file
+uses bind mounts configured through `.env`, so include those directories in
+whatever backup tool you use. [`core/backrest`](../../core/backrest/) is an
+optional Restic-based example.
 
-- **Backups:** Handled dynamically via cron jobs in the backup-manager container.
-- **Recovery:** If data corruption occurs, refer to the `HOMARR_DISASTER_RECOVERY.md` runbook located in the `/opt/backup-manager/` directory for automated restoration scripts.
+For recovery, restore the data directories before starting the containers
+again.

@@ -5,7 +5,7 @@ services:
     environment:
       - PUID=${PUID:-1001}
       - PGID=${PGID:-1001}
-      - TZ=${TIMEZONE:-Europe/Madrid}
+      - TZ=${TIMEZONE:-UTC}
       - DOCKER_MODS=linuxserver/mods:universal-calibre
       - OAUTHLIB_RELAX_TOKEN_SCOPE=1
     volumes:
@@ -23,7 +23,7 @@ services:
     environment:
       - PUID=${PUID:-1001}
       - PGID=${PGID:-1001}
-      - TZ=${TIMEZONE:-Europe/Madrid}
+      - TZ=${TIMEZONE:-UTC}
     volumes:
       - ${LAZYLIBRARIAN_CONFIG_DIR:-/opt/compose/bookshelf/config/lazylibrarian}:/config
       - ${BOOKS_HOST_DIR:-/srv/media/books}:/books

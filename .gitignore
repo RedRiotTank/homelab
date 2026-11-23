@@ -11,6 +11,8 @@
 # =========================================
 # 2. LOCAL DOCKER OVERRIDES & LOGS
 # =========================================
+# Local Prometheus remote-target files may contain private hostnames/IPs.
+core/monitoring-stack-gpnc/configs/prometheus/targets/*.yml
 #docker-compose.override.yml
 *.log
 *.sql
@@ -46,13 +48,13 @@ custom-pages/
 **/resources/
 
 # Local build / clone residues not meant for git root
-backup-manager-old-backup/
-minecraft_servers/
+*_old/
+*.orig/
 
-# Custom private services (not tracked in this public repo)
-portfolio/
-pseudorandomometricsequencesapi/
-redalchemy/
+# Local/private services and data (not part of the public stack collection)
+private/
+local/
+.claude/
 
 # Kitsunarr build sources
 compose/arr-stack/kitsunarr_src/
