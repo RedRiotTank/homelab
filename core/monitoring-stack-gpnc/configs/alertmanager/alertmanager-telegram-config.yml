@@ -11,6 +11,9 @@
 global:
   resolve_timeout: 5m
 
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
 route:
   group_by: ['alertname', 'instance', 'severity']
   group_wait: 30s
@@ -26,3 +29,4 @@ receivers:
         chat_id: 123456789
         send_resolved: true
         parse_mode: HTML
+        message: '{{ template "telegram.custom" . }}'

@@ -129,6 +129,7 @@ services:
       - '--web.external-url=http://localhost:9093'
     volumes:
       - ${ALERTMANAGER_CONFIG_FILE:-./configs/alertmanager/alertmanager-fallback-config.yml}:/etc/alertmanager/config.yml
+      - ./configs/alertmanager/templates:/etc/alertmanager/templates:ro
     ports:
       - "${ALERTMANAGER_PORT:-9093}:9093"
     cpus: ${MONITORING_CPUS:-0.5}

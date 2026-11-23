@@ -1,0 +1,31 @@
+{{ define "telegram.custom" -}}
+{{- $firing := len .Alerts.Firing -}}
+{{- $resolved := len .Alerts.Resolved -}}
+{{- if gt $firing 0 -}}
+🔥 <b>{{ $firing }} firing alert{{ if ne $firing 1 }}s{{ end }}</b>
+{{ end -}}
+{{- if gt $resolved 0 -}}
+✅ <b>{{ $resolved }} resolved alert{{ if ne $resolved 1 }}s{{ end }}</b>
+{{ end -}}
+{{- range .Alerts.Firing }}
+{{ template "telegram.alert" . }}
+{{- end }}
+{{- range .Alerts.Resolved }}
+{{ template "telegram.alert" . }}
+{{- end }}
+{{- if .ExternalURL }}
+🔗 <a href="{{ .ExternalURL }}">Alertmanager</a>
+{{- end }}
+{{- end }}
+
+{{ define "telegram.alert" -}}
+{{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} <b>{{ .Labels.alertname }}</b>
+{{- with .Labels.severity }} · <b>{{ . | toUpper }}</b>{{ end }}
+{{- with .Labels.instance }} · <code>{{ . }}</code>{{ end }}
+{{- with .Labels.device }} · 💾 <code>{{ . }}</code>{{ end }}
+{{- with .Labels.name }} · 📦 <code>{{ . }}</code>{{ end }}
+{{- with .Annotations.summary }}
+<i>{{ . }}</i>{{ end }}
+{{- with .Annotations.description }}
+{{ . }}{{ end }}
+{{- end }}
