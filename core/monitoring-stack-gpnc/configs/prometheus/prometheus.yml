@@ -60,3 +60,10 @@ scrape_configs:
         labels:
           instance: 'primary'
           node: 'primary'
+
+  - job_name: backrest-verify
+    static_configs:
+      - targets: [ 'backrest-verify:9798' ]
+        labels:
+          instance: 'primary'
+          node: 'primary'

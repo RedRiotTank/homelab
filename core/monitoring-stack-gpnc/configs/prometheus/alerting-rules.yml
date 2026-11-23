@@ -324,3 +324,89 @@ groups:
     expr: changes(backrest_plan_last_success_timestamp_seconds[10m]) > 0
     for: 1m
 
+- name: backup-verification
+  rules:
+  - alert: BackupRepoCheckFailed
+    annotations:
+      summary: "Repository check failed: {{ $labels.repo_id }}"
+      description: "The last restic check for repository {{ $labels.repo_id }} failed. Backups may still run, but repository integrity is not proven."
+    labels:
+      severity: critical
+    expr: backrest_repo_last_check_failed == 1
+    for: 5m
+
+  - alert: BackupRepoCheckStale
+    annotations:
+      summary: "Repository check is stale: {{ $labels.repo_id }}"
+      description: "The last completed restic check for repository {{ $labels.repo_id }} is older than 40 days."
+    labels:
+      severity: warning
+    expr: |
+      (time() - backrest_repo_last_check_timestamp_seconds) > 40 * 24 * 3600
+      and
+      backrest_repo_last_check_timestamp_seconds > 0
+    for: 6h
+
+  - alert: BackupRepoCheckNeverRan
+    annotations:
+      summary: "Repository has never been checked: {{ $labels.repo_id }}"
+      description: "Backrest has no completed restic check recorded for repository {{ $labels.repo_id }}."
+    labels:
+      severity: warning
+    expr: backrest_repo_last_check_timestamp_seconds == 0
+    for: 1h
+
+  - alert: BackupVerificationDown
+    annotations:
+      summary: "Backup verification service is down"
+      description: "Prometheus has not scraped the backrest-verify service for more than 10 minutes."
+    labels:
+      severity: critical
+    expr: |
+      up{job="backrest-verify"} == 0
+      or
+      absent(up{job="backrest-verify"})
+    for: 10m
+
+  - alert: BackupVerificationFailed
+    annotations:
+      summary: "Monthly restore drill failed"
+      description: "The last restore verification drill failed. Open Telegram /verify or the backrest-verify report for the failed checks."
+    labels:
+      severity: critical
+    expr: |
+      backrest_verify_success == 0
+      and
+      backrest_verify_last_run_timestamp_seconds > 0
+    for: 5m
+
+  - alert: BackupVerificationOverdue
+    annotations:
+      summary: "Restore drill is overdue"
+      description: "No restore verification drill has run for more than 35 days."
+    labels:
+      severity: warning
+    expr: |
+      (time() - backrest_verify_last_run_timestamp_seconds) > 35 * 24 * 3600
+      and
+      backrest_verify_last_run_timestamp_seconds > 0
+    for: 6h
+
+  - alert: BackupVerificationNeverRan
+    annotations:
+      summary: "Restore drill has never run"
+      description: "The backrest-verify service has no recorded drill run."
+    labels:
+      severity: warning
+    expr: backrest_verify_last_run_timestamp_seconds == 0
+    for: 24h
+
+  - alert: BackupVerificationCompleted
+    annotations:
+      summary: "Restore drill completed"
+      description: "A restore verification drill finished successfully. Open Telegram /verify for restored size and snapshot details."
+    labels:
+      severity: info
+    expr: changes(backrest_verify_last_success_timestamp_seconds[10m]) > 0
+    for: 1m
+

@@ -45,6 +45,9 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 | `docker-compose.yml` | Base, portable service definitions for Backrest and its read-only status exporter. No network attachment — not reachable through the reverse proxy on its own. |
 | `docker-compose.override.yml` | Attaches Backrest to `proxy_net` and `monitoring_net`, attaches the exporter to `monitoring_net`, and injects Promtail labels. **Not optional** — `proxy_net` lives here instead of the base file, so the UI isn't reachable via Nginx Proxy Manager without it. |
 | `backrest-exporter.py` | Read-only exporter that queries the Backrest API and exposes `/metrics` and `/status` on the internal monitoring network. |
+| `scripts/dbdump.sh` | Pre-backup hook that writes consistent logical database dumps to `/data/dbdumps`. |
+| `scripts/collect-config.sh` | Pre-backup hook that stages Komodo `.env` files, home configuration and the host-config whitelist into `/data/stack-envs`, `/data/home-config` and `/data/host-config`. |
+| `verify/` | `backrest-verify` image and scheduler: monthly restore drill, validations, `/status` and `/metrics`. |
 | `.env.example` | Template for all environment variables consumed by `docker-compose.yml`. |
 
 ## Configuration & Environment Variables
@@ -55,6 +58,8 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 | `TZ` | `UTC` | Container timezone, used for schedule evaluation. |
 | `HOST_RCLONE_CONFIG_DIR` | `~/.config/rclone` | Host directory containing `rclone.conf` for cloud storage remotes (S3, B2, GDrive, etc.). |
 | `HOST_HOMELAB_DIR` | `~/homelab` | Host path to the homelab Git repository, mounted read-only as a backup source. |
+| `HOST_HOME_DIR` | `/home/deployer` | Host home directory whose selected configuration is staged by `collect-config.sh`. |
+| `HOST_ETC_DIR` | `/etc` | Host configuration directory whose whitelist is staged by `collect-config.sh`. |
 | `HOST_DOCKER_VOLUMES_DIR` | `/var/lib/docker/volumes` | Backup source for all named Docker volumes. |
 | `HOST_OPT_DIR` | `/opt` | Backup source for `/opt` configs and apps. |
 | `HOST_SRV_DIR` | `/srv` | Backup source for bulk/shared data. |
@@ -114,6 +119,72 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 
 ## Specific Notes
 
+### Verification and disaster recovery
+
+A backup that has never been restored is an assumption, not a guarantee. The
+design for monthly restore drills, the `backrest-verify` sidecar, the metrics and
+alerts, and the recovery-kit requirements live in
+[`docs/backup-verification.md`](../../docs/backup-verification.md). The
+step-by-step clean-host rebuild procedure is in
+[`docs/disaster-recovery.md`](../../docs/disaster-recovery.md).
+
+The verification schedule is monthly, on day 16 at 04:00 Europe/Madrid. It
+restores the latest Core snapshot from the local repository plus one remote
+repository (alternating between `GDrive-RedServer` and `miixzify`), validates the
+database dumps and configuration, and reports the result through Prometheus,
+Grafana and Telegram. It does not mount the Docker socket; container-level
+validation is reserved for the quarterly clean-room drill.
+
+### Staged configuration coverage
+
+`/opt/stacks` is excluded from Restic because it is a Komodo-managed deployment
+directory. To avoid depending only on the Komodo MongoDB schema, the Core plans
+run `scripts/collect-config.sh` at snapshot start. It stages:
+
+- **`/data/stack-envs`** — the 12 Komodo-rendered `.env` files, mirrored under
+  `opt/stacks/...`, plus a SHA-256 manifest.
+- **`/data/home-config`** — `.ssh`, `.gnupg`, `bin`, shell dotfiles, selected
+  `.config` entries and `alertmanager-telegram.local.yml`. Caches, editor data,
+  shell history and `rclone.conf` are excluded.
+- **`/data/host-config`** — selected `/etc` files: systemd units, `sshd_config`,
+  `fstab`, `hosts`, `hostname`, `timezone`, sysctl, APT sources, cron, iptables
+  and Docker daemon config. Machine identity and SSH host keys are excluded.
+
+The hook is fail-closed: if `.ssh`, the Telegram Alertmanager config, or too few
+stack `.env` files are missing, the plan fails instead of silently archiving less
+coverage. The scripts live in `scripts/` and are mounted read-only at
+`/data/scripts`.
+
+`HOST_HOME_DIR` and `HOST_ETC_DIR` control the host paths. The hook uses a
+short-lived helper container with the Backrest image so those host directories
+do not have to be mounted into the long-running container.
+
+### Monthly restore verification (`backrest-verify`)
+
+The stack includes a `backrest-verify` sidecar that runs a real restore drill on
+day 16 of each month at 04:00 Europe/Madrid. It restores the latest Core
+snapshot from `local-repo-srv` plus one rotating remote (`GDrive-RedServer` on
+even months, `miixzify` on odd months), validates the restored files, database
+dumps and staged configuration, and restores the latest HeavyData snapshot from
+the same remote.
+
+- Repositories are mounted read-only and every Restic command uses `--no-lock`;
+  the service never writes to a repository.
+- No Docker socket is mounted. Container-level validation is reserved for the
+  quarterly clean-room drill.
+- Scratch space defaults to `/var/tmp/backrest-verify` and is removed after each
+  run.
+- `GET /status` on `backrest-verify:9798` returns the JSON result and per-check
+  details; `GET /metrics` exposes Prometheus metrics.
+- Reports and status live in the `backrest_verify_data` volume.
+- Prometheus scrapes `backrest-verify:9798` through the `monitoring` network.
+- Telegram `/verify` and the `Backup Verification` Grafana dashboard show the
+  last result and the countdown to the next drill.
+
+The image is built from `verify/Dockerfile`; see
+[`verify/README.md`](./verify/README.md) for build, manual-run and
+troubleshooting instructions.
+
 ### Prometheus, Alerting and Telegram
 
 The stack includes `backrest-exporter`, a read-only helper that authenticates to the Backrest API and exposes:
@@ -141,6 +212,14 @@ Prometheus alerts on:
 - `BackrestBackupMissing` — no successful backup in the 30-day history.
 - `BackrestBackupStale` — last successful backup older than `BACKREST_STALE_SECONDS`.
 - `BackrestBackupCompleted` — a successful backup timestamp changed (one info notification per group).
+- `BackupRepoCheckFailed` — the last `restic check` for a repository failed.
+- `BackupRepoCheckStale` — no completed check in the last 40 days.
+- `BackupRepoCheckNeverRan` — a repository has no recorded check.
+
+The exporter also exposes `backrest_repo_last_check_timestamp_seconds`,
+`backrest_repo_last_check_failed` and
+`backrest_repo_last_check_success_timestamp_seconds` so the Telegram bot and
+Grafana can report repository check state.
 
 A repository outage normally surfaces as a failed or stale plan backup; the
 exporter's `backrest_up` metric covers the API itself being unreachable.
@@ -153,6 +232,10 @@ To avoid repository lock collisions and maximize Restic's cross-snapshot dedupli
 | :--- | :--- | :--- | :--- | :--- |
 | **Configs & State** | `/backup/homelab`<br>`/backup/opt`<br>`/backup/docker_volumes` | Daily (e.g., `0 3 * * *`) | 7 Daily, 4 Weekly, 6 Monthly | Fast, lightweight snapshots containing application states, `.env` files, databases, and Docker specs. |
 | **Bulk / Heavy Data** | `/backup/srv/<app_data>` | Weekly (e.g., `0 4 * * 0`) | 4 Weekly, 2–3 Monthly | Large media, shared drives, or archive directories. |
+
+The deployed Core plans also include `/data/stack-envs`, `/data/home-config` and
+`/data/host-config`, populated by `collect-config.sh`. They are small and change
+rarely, but they carry the configuration needed to rebuild the environment.
 
 #### Exclusion Guidelines
 
@@ -173,6 +256,17 @@ To avoid repository lock collisions and maximize Restic's cross-snapshot dedupli
       **/*.crdownload
 
 ### Database Consistency & Hooks
+
+The stack ships two pre-backup hooks in `scripts/`:
+
+- `dbdump.sh` — consistent logical dumps for PostgreSQL, MariaDB, MongoDB and
+  SQLite, written to `/data/dbdumps`.
+- `collect-config.sh` — stages Komodo `.env` files, home configuration and the
+  host-config whitelist into `/data/stack-envs`, `/data/home-config` and
+  `/data/host-config`.
+
+The scripts are mounted read-only at `/data/scripts` and are included in the Core
+plans. Additional hooks can still be defined per plan in the Backrest UI.
 
 While filesystem snapshots work seamlessly for static files, active database engines (PostgreSQL, MariaDB, MongoDB) may be writing transactions during backup runs.
 

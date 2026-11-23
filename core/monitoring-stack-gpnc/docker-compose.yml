@@ -34,6 +34,7 @@ services:
       - ./dashboards/node-metrics.json:/var/lib/grafana/dashboards/node-metrics.json:ro
       - ./dashboards/container-metrics.json:/var/lib/grafana/dashboards/container-metrics.json:ro
       - ./dashboards/log-search.json:/var/lib/grafana/dashboards/log-search.json:ro
+      - ./dashboards/backup-verification.json:/var/lib/grafana/dashboards/backup-verification.json:ro
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
@@ -171,6 +172,7 @@ services:
       - ALERTMANAGER_URL=http://alertmanager:9093
       - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090}
       - BACKREST_STATUS_URL=${BACKREST_STATUS_URL:-http://backrest-exporter:9797/status}
+      - BACKREST_VERIFY_STATUS_URL=${BACKREST_VERIFY_STATUS_URL:-http://backrest-verify:9798/status}
       - BOT_CONFIG_FILE=/config/alertmanager.yml
       - TELEGRAM_ALLOWED_CHAT_IDS=${TELEGRAM_ALLOWED_CHAT_IDS:-}
       - NODE_DISPLAY_NAMES=${NODE_DISPLAY_NAMES:-}

@@ -82,6 +82,10 @@ def collect() -> dict:
     summary = backrest_call("GetSummaryDashboard")
     config = backrest_call("GetConfig")
     now = time.time()
+    with LOCK:
+        previous_repos = {
+            str(repo.get("id")): repo for repo in STATE.get("repos", [])
+        }
 
     plan_repo = {
         str(plan.get("id")): str(plan.get("repo") or "")
@@ -91,6 +95,50 @@ def collect() -> dict:
         str(repo.get("id")): str(repo.get("uri") or "")
         for repo in (config.get("repos") or [])
     }
+
+    # Backrest's summary dashboard does not include repository check results.
+    # Fetch the operation log and derive the latest completed check per repo.
+    checks: dict[str, dict] = {}
+    operations_ok = True
+    instance_id = str(config.get("instance") or "")
+    if instance_id:
+        try:
+            operations = backrest_call(
+                "GetOperations", {"selector": {"instanceId": instance_id}}
+            )
+        except Exception as error:
+            log(f"operations refresh failed: {error}")
+            operations_ok = False
+            operations = {}
+        for operation in operations.get("operations") or []:
+            if "operationCheck" not in operation:
+                continue
+            repo_id = str(operation.get("repoId") or "")
+            if not repo_id:
+                continue
+            status = normalize_status(operation.get("status"))
+            if status not in ("success", "failed", "cancelled"):
+                continue
+            timestamp = int(
+                as_int(
+                    operation.get("unixTimeEndMs")
+                    or operation.get("unixTimeStartMs")
+                )
+                / 1000
+            )
+            current = checks.setdefault(
+                repo_id,
+                {
+                    "last_check": 0,
+                    "last_check_status": "unknown",
+                    "last_check_success": 0,
+                },
+            )
+            if timestamp >= current["last_check"]:
+                current["last_check"] = timestamp
+                current["last_check_status"] = status
+            if status == "success" and timestamp > current["last_check_success"]:
+                current["last_check_success"] = timestamp
 
     plans: list[dict] = []
     for plan in summary.get("planSummaries") or []:
@@ -130,14 +178,30 @@ def collect() -> dict:
         )
 
     repos: list[dict] = []
-    for repo in summary.get("repoSummaries") or []:
-        repo_id = str(repo.get("id") or "unknown")
+    summary_by_repo = {
+        str(repo.get("id") or "unknown"): repo
+        for repo in (summary.get("repoSummaries") or [])
+    }
+    for repo_id in sorted(set(repo_uri) | set(summary_by_repo)):
+        repo = summary_by_repo.get(repo_id, {})
+        if operations_ok:
+            check = checks.get(repo_id, {})
+        else:
+            # Keep the last known check state if the operation log is
+            # temporarily unavailable, to avoid a false "never checked" alert.
+            check = previous_repos.get(repo_id, {})
         repos.append(
             {
                 "id": repo_id,
                 "uri": repo_uri.get(repo_id, ""),
                 "success_30d": as_int(repo.get("backupsSuccessLast30days")),
                 "failed_30d": as_int(repo.get("backupsFailed30days")),
+                "last_check": int(check.get("last_check", 0)),
+                "last_check_failed": 1
+                if check.get("last_check_status") == "failed"
+                else 0,
+                "last_check_success": int(check.get("last_check_success", 0)),
+                "last_check_status": str(check.get("last_check_status", "unknown")),
             }
         )
 
@@ -145,6 +209,7 @@ def collect() -> dict:
         "up": True,
         "error": "",
         "last_refresh": int(now),
+        "checks_ok": operations_ok,
         "plans": plans,
         "repos": repos,
     }
@@ -156,7 +221,7 @@ def refresh() -> None:
         new_state = collect()
         with LOCK:
             STATE = new_state
-        log(f"refreshed {len(new_state['plans'])} plans")
+        log(f"refreshed {len(new_state['plans'])} plans, {len(new_state['repos'])} repos")
     except Exception as error:
         with LOCK:
             STATE = {
@@ -205,6 +270,16 @@ def render_metrics() -> str:
         }
         for name, value in metrics.items():
             lines.append(f"{name}{{{labels}}} {value}")
+    lines.extend(
+        [
+            "# HELP backrest_repo_last_check_timestamp_seconds Last completed repository check.",
+            "# TYPE backrest_repo_last_check_timestamp_seconds gauge",
+            "# HELP backrest_repo_last_check_failed Whether the last repository check failed.",
+            "# TYPE backrest_repo_last_check_failed gauge",
+            "# HELP backrest_repo_last_check_success_timestamp_seconds Last successful repository check.",
+            "# TYPE backrest_repo_last_check_success_timestamp_seconds gauge",
+        ]
+    )
     for repo in state.get("repos", []):
         labels = f'repo_id="{label(repo["id"])}"'
         lines.append(
@@ -212,6 +287,15 @@ def render_metrics() -> str:
         )
         lines.append(
             f"backrest_repo_backups_failed_30d{{{labels}}} {repo['failed_30d']}"
+        )
+        lines.append(
+            f"backrest_repo_last_check_timestamp_seconds{{{labels}}} {repo['last_check']}"
+        )
+        lines.append(
+            f"backrest_repo_last_check_failed{{{labels}}} {repo['last_check_failed']}"
+        )
+        lines.append(
+            f"backrest_repo_last_check_success_timestamp_seconds{{{labels}}} {repo['last_check_success']}"
         )
     return "\n".join(lines) + "\n"
 

@@ -120,6 +120,11 @@ Choose a data-root layout that fits your host, for example:
 Configure those paths through `.env`. Back them up with your preferred tool.
 `core/backrest/` is an optional example based on Restic, but it is not required.
 
+Backups are only useful if they can be restored. The verification design and
+monthly drill are documented in
+[`backup-verification.md`](./backup-verification.md); the clean-host rebuild
+procedure is in [`disaster-recovery.md`](./disaster-recovery.md).
+
 ## Monitoring
 
 The central monitoring stack and the per-node agent are optional. If you use

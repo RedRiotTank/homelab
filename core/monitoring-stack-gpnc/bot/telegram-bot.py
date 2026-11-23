@@ -7,7 +7,7 @@ Alertmanager config file, which avoids duplicating secrets in the stack
 environment.
 
 Commands:
-  /start, /help, /alerts, /silences, /status, /id
+  /start, /help, /alerts, /silences, /status, /id, /backups, /verify
 """
 
 from __future__ import annotations
@@ -28,6 +28,9 @@ ALERTMANAGER_URL = os.environ.get("ALERTMANAGER_URL", "http://alertmanager:9093"
 PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL", "http://prometheus:9090").rstrip("/")
 BACKREST_STATUS_URL = os.environ.get(
     "BACKREST_STATUS_URL", "http://backrest-exporter:9797/status"
+).rstrip("/")
+BACKREST_VERIFY_STATUS_URL = os.environ.get(
+    "BACKREST_VERIFY_STATUS_URL", "http://backrest-verify:9798/status"
 ).rstrip("/")
 CONFIG_FILE = os.environ.get("BOT_CONFIG_FILE", "/config/alertmanager.yml")
 ALLOWED_ENV = os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS", "")
@@ -137,6 +140,16 @@ def human_time_epoch(value: int | float | None) -> str:
     if not value:
         return "—"
     return datetime.fromtimestamp(float(value)).astimezone().strftime("%Y-%m-%d %H:%M")
+
+
+def human_bytes(value: int | float | None) -> str:
+    size = float(value or 0)
+    units = ("B", "KiB", "MiB", "GiB", "TiB")
+    index = 0
+    while size >= 1024 and index < len(units) - 1:
+        size /= 1024
+        index += 1
+    return f"{size:.1f} {units[index]}" if index else f"{int(size)} B"
 
 
 def human_time(value: str | None) -> str:
@@ -357,6 +370,9 @@ def format_backups(status: dict) -> str:
         return result
 
     attention = sum(1 for plan in plans if issues(plan))
+    repo_checks = {
+        str(repo.get("id")): repo for repo in (status.get("repos") or [])
+    }
     blocks = [
         "💾 <b>Backrest</b> ✅",
         f"<i>{len(plans)} plans · {attention} need attention</i>",
@@ -366,7 +382,19 @@ def format_backups(status: dict) -> str:
         groups.setdefault(plan.get("repo") or "unknown", []).append(plan)
 
     for repo in sorted(groups, key=str.lower):
-        blocks.append(f"📦 <b>Repo: {escape(repo)}</b>")
+        check = repo_checks.get(repo, {})
+        check_time = check.get("last_check") or 0
+        if check_time:
+            check_icon = "❌" if check.get("last_check_failed") else "✅"
+            check_text = (
+                f"last check: {check_icon} "
+                f"{human_age_epoch(check_time)}"
+            )
+        else:
+            check_text = "last check: ⚪ never"
+        blocks.append(
+            f"📦 <b>Repo: {escape(repo)}</b>\n<i>{check_text}</i>"
+        )
         for plan in sorted(groups[repo], key=lambda item: item.get("id", "")):
             status_name = plan.get("last_status") or "unknown"
             icon = icons.get(status_name, "⚪")
@@ -393,6 +421,110 @@ def format_backups(status: dict) -> str:
     return "\n\n".join(blocks)
 
 
+def fetch_backrest_verify_status() -> dict:
+    request = urllib.request.Request(BACKREST_VERIFY_STATUS_URL)
+    with urllib.request.urlopen(request, timeout=15) as response:
+        return json.loads(response.read().decode())
+
+
+def format_verify(status: dict) -> str:
+    if not status.get("up"):
+        return (
+            "🧪 <b>Backup verification</b> ❌\n"
+            f"<i>{escape(status.get('error') or 'status unavailable')}</i>"
+        )
+
+    result = str(status.get("result") or "never").lower()
+    icons = {"pass": "✅", "fail": "❌", "never": "⚪"}
+    icon = icons.get(result, "⚪")
+    last_run = int(status.get("last_run") or 0)
+    last_success = int(status.get("last_success") or 0)
+    duration = int(status.get("duration_seconds") or 0)
+    checks_total = int(status.get("checks_total") or 0)
+    checks_failed = int(status.get("checks_failed") or 0)
+    metrics = status.get("metrics") or {}
+    restored_bytes = int(metrics.get("restored_bytes") or 0)
+    restored_files = int(metrics.get("restored_files") or 0)
+    next_run = int(status.get("next_run") or 0)
+    now = time.time()
+
+    if not last_run:
+        blocks = [
+            "🧪 <b>Backup verification</b> ⚪",
+            "<i>No drill has run yet.</i>",
+        ]
+    else:
+        duration_text = (
+            human_duration(duration) if duration >= 60 else f"{duration}s"
+        )
+        blocks = [
+            f"🧪 <b>Backup verification</b> {icon}\n"
+            f"Last: <b>{escape(result.upper())}</b> · "
+            f"{escape(human_time_epoch(last_run))} · {escape(duration_text)}"
+        ]
+        if last_success:
+            blocks.append(
+                f"Last success: {escape(human_age_epoch(last_success))} ago"
+            )
+
+    if status.get("repo"):
+        blocks.append(
+            f"Remote: <code>{escape(status['repo'])}</code> (rotation)"
+        )
+    if restored_bytes or restored_files:
+        blocks.append(
+            f"Restored: {escape(human_bytes(restored_bytes))} · "
+            f"{restored_files:,} files"
+        )
+    if checks_total:
+        blocks.append(
+            f"Checks: {checks_total - checks_failed} passed · "
+            f"{checks_failed} failed"
+        )
+    if next_run:
+        next_text = human_time_epoch(next_run)
+        if next_run <= now:
+            next_text += " ⚠️ overdue"
+        else:
+            next_text += f" (in {human_duration(int(next_run - now))})"
+        blocks.append(f"Next: {escape(next_text)}")
+
+    snapshots = status.get("snapshots") or {}
+    snapshot_lines = []
+    for repo_id in sorted(snapshots):
+        entries = snapshots.get(repo_id) or {}
+        parts = []
+        for kind in ("core", "heavy"):
+            snapshot = entries.get(kind)
+            if snapshot:
+                parts.append(
+                    f"{kind} <code>{escape(snapshot.get('short_id') or '?')}</code>"
+                )
+        if parts:
+            snapshot_lines.append(
+                f"• {escape(repo_id)}: " + ", ".join(parts)
+            )
+    if snapshot_lines:
+        blocks.append("Snapshots:\n" + "\n".join(snapshot_lines[:4]))
+
+    failures = [
+        check
+        for check in (status.get("checks") or [])
+        if str(check.get("status") or "").lower() == "fail"
+    ]
+    if failures:
+        blocks.append("❌ <b>Failed checks</b>")
+        for check in failures[:3]:
+            detail = check.get("detail") or ""
+            line = f"• <code>{escape(check.get('name'))}</code>"
+            if detail:
+                line += f": <i>{escape(detail)}</i>"
+            blocks.append(line)
+    elif status.get("error"):
+        blocks.append(f"<i>{escape(status['error'])}</i>")
+    return "\n\n".join(blocks)
+
+
 def keyboard() -> str:
     return json.dumps(
         {
@@ -403,10 +535,13 @@ def keyboard() -> str:
                 ],
                 [
                     {"text": "💾 Backups", "callback_data": "backups"},
-                    {"text": "🔕 Silences", "callback_data": "silences"},
+                    {"text": "🧪 Verify", "callback_data": "verify"},
                 ],
                 [
+                    {"text": "🔕 Silences", "callback_data": "silences"},
                     {"text": "📊 Status", "callback_data": "status"},
+                ],
+                [
                     {"text": "🔄 Refresh alerts", "callback_data": "alerts"},
                 ],
             ]
@@ -476,6 +611,7 @@ def handle_command(chat_id: int, text: str) -> None:
             "🔥 /alerts — active alerts\n"
             "📦 /containers — all containers and limits\n"
             "💾 /backups — Backrest plan status\n"
+            "🧪 /verify — monthly restore drill result\n"
             "🔕 /silences — active silences\n"
             "📊 /status — Alertmanager version and uptime\n"
             "🆔 /id — this chat ID",
@@ -495,6 +631,11 @@ def handle_command(chat_id: int, text: str) -> None:
             send(chat_id, format_backups(fetch_backrest_status()))
         except Exception as error:
             send(chat_id, f"❌ Could not read backups: {escape(error)}")
+    elif command == "/verify":
+        try:
+            send(chat_id, format_verify(fetch_backrest_verify_status()))
+        except Exception as error:
+            send(chat_id, f"❌ Could not read verification: {escape(error)}")
     elif command == "/silences":
         try:
             send(chat_id, format_silences(fetch_silences()))
@@ -524,6 +665,11 @@ def handle_callback(callback: dict) -> None:
         send(chat_id, format_containers())
     elif data == "backups":
         send(chat_id, format_backups(fetch_backrest_status()))
+    elif data == "verify":
+        try:
+            send(chat_id, format_verify(fetch_backrest_verify_status()))
+        except Exception as error:
+            send(chat_id, f"❌ Could not read verification: {escape(error)}")
     elif data == "silences":
         send(chat_id, format_silences(fetch_silences()))
     elif data == "status":
@@ -535,6 +681,7 @@ def setup_commands() -> None:
         {"command": "alerts", "description": "Show active alerts"},
         {"command": "containers", "description": "Show all containers and limits"},
         {"command": "backups", "description": "Show Backrest backup status"},
+        {"command": "verify", "description": "Show restore verification result"},
         {"command": "silences", "description": "Show active silences"},
         {"command": "status", "description": "Alertmanager status and uptime"},
         {"command": "help", "description": "Show available commands"},

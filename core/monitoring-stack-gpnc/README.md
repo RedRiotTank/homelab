@@ -37,7 +37,7 @@ All services here join a single Docker network literally named `monitoring`, cre
 Despite the name, joining `monitoring`/`monitoring_net` is **not** what makes Promtail or Prometheus pick up another stack's container:
 
 - **Promtail** discovers every container through the mounted Docker socket (`docker_sd_configs` in `configs/promtail/promtail.yaml`) and reads its log files straight off disk — it never talks to the target container over the network. What actually routes a container's logs correctly is the `logging` / `logging_jobname` **labels**, not network membership.
-- **Prometheus** only scrapes the exact targets listed in `configs/prometheus/prometheus.yml` (`prometheus`, `alertmanager`, `node-exporter`, `cadvisor`, `backrest-exporter`, local and the remote-node targets over the private network). It never scrapes adguard, vaultwarden, headscale, komodo, or any other app container, and it never talks to Backrest directly; the exporter does that. Regardless of which network they are on, unsupported app containers are not scraped.
+- **Prometheus** only scrapes the exact targets listed in `configs/prometheus/prometheus.yml` (`prometheus`, `alertmanager`, `node-exporter`, `cadvisor`, `backrest-exporter`, `backrest-verify`, local and the remote-node targets over the private network). It never scrapes adguard, vaultwarden, headscale, komodo, or any other app container, and it never talks to Backrest directly; the exporter does that. Regardless of which network they are on, unsupported app containers are not scraped.
 
 So for other stacks in this repository, attaching to `monitoring_net` is effectively decorative for telemetry purposes — harmless to keep (e.g. useful for `docker exec <container> curl http://loki:3100/ready` while debugging), but it is the `logging`/`logging_jobname` labels alone that make Promtail ship a container's logs, not the network attachment.
 
@@ -92,7 +92,8 @@ monitoring-stack-gpnc/
 └── dashboards/
     ├── node-metrics.json
     ├── container-metrics.json
-    └── log-search.json
+    ├── log-search.json
+    └── backup-verification.json
 ```
 
 ## Configuration & Environment Variables
@@ -187,6 +188,20 @@ Telegram notifications use the HTML template in
 container, summary, description and age). Edit that file to customize the
 message, then restart Alertmanager.
 
+### Repository check alerts
+
+The Backrest exporter now exposes the latest completed `restic check` per
+repository. Three rules in `configs/prometheus/alerting-rules.yml` use it:
+
+- `BackupRepoCheckFailed` (`critical`) — the last check failed.
+- `BackupRepoCheckStale` (`warning`) — no completed check in 40 days.
+- `BackupRepoCheckNeverRan` (`warning`) — the repository has no recorded check.
+
+These close the gap where a broken `restic check` produced no metric and no
+Telegram notification. The monthly restore drill and its own alerts are added in
+the verification phases described in
+[`docs/backup-verification.md`](../../docs/backup-verification.md).
+
 To activate one:
 
 1. Copy the chosen template to a private location, for example
@@ -221,7 +236,8 @@ queries, the stack includes a small read-only bot in `bot/telegram-bot.py`:
 
 - `/alerts` — active alerts grouped by node, with severity, device and container.
 - `/containers` — every container, grouped by node, with CPU, memory and limits.
-- `/backups` — Backrest plan status, last success, next run and 30-day counts.
+- `/backups` — Backrest plan status, last success, next run, 30-day counts and the last repository check per repo.
+- `/verify` — last monthly restore drill result, restored size, failed checks and countdown to the next drill.
 - `/silences` — active silences and their matchers.
 - `/status` — Alertmanager version, uptime and cluster state.
 - `/help`, `/id` — command list and current chat ID.
@@ -254,6 +270,7 @@ Optional bot variables:
 | `NODE_DISPLAY_NAMES` | empty | Map node labels to display names, e.g. `primary:primary-node,edge-node:edge-node-1`. |
 | `PROMETHEUS_URL` | `http://prometheus:9090` | Prometheus endpoint for `/containers`. |
 | `BACKREST_STATUS_URL` | `http://backrest-exporter:9797/status` | Backrest exporter endpoint for `/backups`. |
+| `BACKREST_VERIFY_STATUS_URL` | `http://backrest-verify:9798/status` | Verification service endpoint for `/verify`. |
 | `TZ` | `${TIMEZONE:-UTC}` | Timezone for displayed times. |
 
 Then recreate the stack (or just the new service). The service is disabled by

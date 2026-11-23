@@ -13,6 +13,9 @@ services:
       - XDG_CACHE_HOME=/cache
       - TMPDIR=/tmp
       - TZ=${TZ:-UTC}
+      # Host paths used by the collect-config.sh pre-backup hook.
+      - HOST_HOME_DIR=${HOST_HOME_DIR:-/home/deployer}
+      - HOST_ETC_DIR=${HOST_ETC_DIR:-/etc}
     volumes:
       # Internal state, cache and config
       - backrest_data:/data
@@ -31,6 +34,9 @@ services:
 
       # Docker socket (enables container inspection and pre-backup hooks)
       - "${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock:ro"
+
+      # Versioned helper scripts (dbdump.sh, collect-config.sh)
+      - ./scripts:/data/scripts:ro
 
       # Destination storage repository (read-write for snapshots)
       - "${BACKREST_REPO_DIR:-/mnt/backups}:/repos/external:rw"
@@ -55,6 +61,46 @@ services:
     depends_on:
       - backrest
 
+  backrest-verify:
+    build:
+      context: ./verify
+    image: ${BACKREST_VERIFY_IMAGE:-backrest-verify:local}
+    container_name: backrest-verify
+    restart: unless-stopped
+    cpus: 1
+    mem_limit: 1g
+    environment:
+      - TZ=${TZ:-UTC}
+      - BACKREST_URL=http://backrest:9898
+      - BACKREST_EXPORTER_USER=${BACKREST_EXPORTER_USER:-prometheus}
+      - BACKREST_EXPORTER_PASSWORD=${BACKREST_EXPORTER_PASSWORD}
+      - BACKREST_CONFIG=/config/config.json
+      - BACKREST_REPO_DIR=/repos/external
+      - BACKREST_VERIFY_STATE_DIR=/verify/state
+      - BACKREST_VERIFY_SCRATCH_DIR=/verify/scratch
+      - BACKREST_VERIFY_RCLONE_CONFIG=/rclone/rclone.conf
+      - BACKREST_VERIFY_ENABLED=${BACKREST_VERIFY_ENABLED:-true}
+      - BACKREST_VERIFY_DAY=${BACKREST_VERIFY_DAY:-16}
+      - BACKREST_VERIFY_HOUR=${BACKREST_VERIFY_HOUR:-4}
+      - BACKREST_VERIFY_MINUTE=${BACKREST_VERIFY_MINUTE:-0}
+      - BACKREST_VERIFY_TIMEZONE=${BACKREST_VERIFY_TIMEZONE:-Europe/Madrid}
+      - BACKREST_VERIFY_REMOTE_ROTATION=${BACKREST_VERIFY_REMOTE_ROTATION:-GDrive-RedServer,miixzify}
+      - BACKREST_VERIFY_READ_DATA_PERCENT=${BACKREST_VERIFY_READ_DATA_PERCENT:-10}
+      - BACKREST_VERIFY_MIN_FREE_GB=${BACKREST_VERIFY_MIN_FREE_GB:-40}
+      - BACKREST_VERIFY_MAX_SNAPSHOT_AGE_HOURS=${BACKREST_VERIFY_MAX_SNAPSHOT_AGE_HOURS:-36}
+      - BACKREST_VERIFY_MAX_RETRIES=${BACKREST_VERIFY_MAX_RETRIES:-3}
+      - BACKREST_VERIFY_RETRY_HOURS=${BACKREST_VERIFY_RETRY_HOURS:-24}
+      - BACKREST_VERIFY_KEEP_REPORTS=${BACKREST_VERIFY_KEEP_REPORTS:-12}
+      - BACKREST_VERIFY_PORT=${BACKREST_VERIFY_PORT:-9798}
+    volumes:
+      - backrest_config:/config:ro
+      - ${BACKREST_REPO_DIR:-/srv/backups}:/repos/external:ro
+      - ${HOST_RCLONE_CONFIG_DIR:-/home/deployer/.config/rclone}:/rclone:ro
+      - ${HOST_BACKREST_VERIFY_SCRATCH_DIR:-/var/tmp/backrest-verify}:/verify/scratch
+      - backrest_verify_data:/verify/state
+    depends_on:
+      - backrest
+
 volumes:
   backrest_data:
     name: backrest_data
@@ -64,3 +110,5 @@ volumes:
     name: backrest_cache
   backrest_tmp:
     name: backrest_tmp
+  backrest_verify_data:
+    name: backrest_verify_data
