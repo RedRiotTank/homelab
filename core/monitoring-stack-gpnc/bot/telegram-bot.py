@@ -26,6 +26,9 @@ from datetime import datetime, timezone
 TELEGRAM_API = os.environ.get("TELEGRAM_API_URL", "https://api.telegram.org").rstrip("/")
 ALERTMANAGER_URL = os.environ.get("ALERTMANAGER_URL", "http://alertmanager:9093").rstrip("/")
 PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL", "http://prometheus:9090").rstrip("/")
+BACKREST_STATUS_URL = os.environ.get(
+    "BACKREST_STATUS_URL", "http://backrest-exporter:9797/status"
+).rstrip("/")
 CONFIG_FILE = os.environ.get("BOT_CONFIG_FILE", "/config/alertmanager.yml")
 ALLOWED_ENV = os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS", "")
 NODE_NAMES_ENV = os.environ.get("NODE_DISPLAY_NAMES", "")
@@ -102,11 +105,8 @@ def parse_time(value: str | None) -> datetime | None:
         return None
 
 
-def human_age(value: str | None) -> str:
-    parsed = parse_time(value)
-    if not parsed:
-        return ""
-    seconds = max(0, int((datetime.now(timezone.utc) - parsed).total_seconds()))
+def human_duration(seconds: int) -> str:
+    seconds = max(0, int(seconds))
     if seconds < 60:
         return "just now"
     minutes, seconds = divmod(seconds, 60)
@@ -117,6 +117,26 @@ def human_age(value: str | None) -> str:
         return f"{hours}h {minutes}m"
     days, hours = divmod(hours, 24)
     return f"{days}d {hours}h"
+
+
+def human_age(value: str | None) -> str:
+    parsed = parse_time(value)
+    if not parsed:
+        return ""
+    seconds = max(0, int((datetime.now(timezone.utc) - parsed).total_seconds()))
+    return human_duration(seconds)
+
+
+def human_age_epoch(value: int | float | None) -> str:
+    if not value:
+        return "never"
+    return human_duration(int(time.time() - float(value)))
+
+
+def human_time_epoch(value: int | float | None) -> str:
+    if not value:
+        return "—"
+    return datetime.fromtimestamp(float(value)).astimezone().strftime("%Y-%m-%d %H:%M")
 
 
 def human_time(value: str | None) -> str:
@@ -301,6 +321,78 @@ def format_containers() -> str:
     return "\n\n".join(blocks)
 
 
+def fetch_backrest_status() -> dict:
+    request = urllib.request.Request(BACKREST_STATUS_URL)
+    with urllib.request.urlopen(request, timeout=15) as response:
+        return json.loads(response.read().decode())
+
+
+def format_backups(status: dict) -> str:
+    if not status.get("up"):
+        return (
+            "💾 <b>Backrest</b> ❌\n"
+            f"<i>{escape(status.get('error') or 'status unavailable')}</i>"
+        )
+
+    plans = status.get("plans") or []
+    if not plans:
+        return "💾 <b>Backrest</b>\nNo backup plans found."
+
+    icons = {
+        "success": "✅",
+        "warning": "⚠️",
+        "failed": "❌",
+        "cancelled": "⏹",
+        "unknown": "⚪",
+    }
+
+    def issues(plan: dict) -> list[str]:
+        result = []
+        if plan.get("stale"):
+            result.append("⏳ stale")
+        if plan.get("no_backup"):
+            result.append("🚨 no successful backup")
+        if plan.get("last_backup_failed"):
+            result.append("❌ last backup failed")
+        return result
+
+    attention = sum(1 for plan in plans if issues(plan))
+    blocks = [
+        "💾 <b>Backrest</b> ✅",
+        f"<i>{len(plans)} plans · {attention} need attention</i>",
+    ]
+    groups: dict[str, list[dict]] = {}
+    for plan in plans:
+        groups.setdefault(plan.get("repo") or "unknown", []).append(plan)
+
+    for repo in sorted(groups, key=str.lower):
+        blocks.append(f"📦 <b>Repo: {escape(repo)}</b>")
+        for plan in sorted(groups[repo], key=lambda item: item.get("id", "")):
+            status_name = plan.get("last_status") or "unknown"
+            icon = icons.get(status_name, "⚪")
+            flags = issues(plan)
+            line = f"{icon} <b>{escape(plan.get('id'))}</b>"
+            if flags:
+                line += " · " + " · ".join(flags)
+            last = (
+                f"last success: {human_age_epoch(plan.get('last_success'))}"
+                if plan.get("last_success")
+                else "last success: never"
+            )
+            next_backup = plan.get("next_backup") or 0
+            next_text = human_time_epoch(next_backup)
+            if next_backup and next_backup < time.time():
+                next_text += " ⚠️ overdue"
+            blocks.append(
+                f"{line}\n"
+                f"{last} · last status: {escape(status_name)}\n"
+                f"next: {escape(next_text)}\n"
+                f"30d: {int(plan.get('success_30d', 0))} ok / "
+                f"{int(plan.get('failed_30d', 0))} failed"
+            )
+    return "\n\n".join(blocks)
+
+
 def keyboard() -> str:
     return json.dumps(
         {
@@ -310,10 +402,11 @@ def keyboard() -> str:
                     {"text": "📦 Containers", "callback_data": "containers"},
                 ],
                 [
+                    {"text": "💾 Backups", "callback_data": "backups"},
                     {"text": "🔕 Silences", "callback_data": "silences"},
-                    {"text": "📊 Status", "callback_data": "status"},
                 ],
                 [
+                    {"text": "📊 Status", "callback_data": "status"},
                     {"text": "🔄 Refresh alerts", "callback_data": "alerts"},
                 ],
             ]
@@ -382,6 +475,7 @@ def handle_command(chat_id: int, text: str) -> None:
             "I can show the current Alertmanager state.\n\n"
             "🔥 /alerts — active alerts\n"
             "📦 /containers — all containers and limits\n"
+            "💾 /backups — Backrest plan status\n"
             "🔕 /silences — active silences\n"
             "📊 /status — Alertmanager version and uptime\n"
             "🆔 /id — this chat ID",
@@ -396,6 +490,11 @@ def handle_command(chat_id: int, text: str) -> None:
             send(chat_id, format_containers())
         except Exception as error:
             send(chat_id, f"❌ Could not read containers: {escape(error)}")
+    elif command == "/backups":
+        try:
+            send(chat_id, format_backups(fetch_backrest_status()))
+        except Exception as error:
+            send(chat_id, f"❌ Could not read backups: {escape(error)}")
     elif command == "/silences":
         try:
             send(chat_id, format_silences(fetch_silences()))
@@ -423,6 +522,8 @@ def handle_callback(callback: dict) -> None:
         send(chat_id, format_alerts(fetch_alerts()))
     elif data == "containers":
         send(chat_id, format_containers())
+    elif data == "backups":
+        send(chat_id, format_backups(fetch_backrest_status()))
     elif data == "silences":
         send(chat_id, format_silences(fetch_silences()))
     elif data == "status":
@@ -433,6 +534,7 @@ def setup_commands() -> None:
     commands = [
         {"command": "alerts", "description": "Show active alerts"},
         {"command": "containers", "description": "Show all containers and limits"},
+        {"command": "backups", "description": "Show Backrest backup status"},
         {"command": "silences", "description": "Show active silences"},
         {"command": "status", "description": "Alertmanager status and uptime"},
         {"command": "help", "description": "Show available commands"},

@@ -7,6 +7,13 @@ services:
       logging_jobname: "backrest-stack"
       logging: "promtail"
 
+  backrest-exporter:
+    networks:
+      - monitoring_net
+    labels:
+      logging_jobname: "backrest-stack"
+      logging: "promtail"
+
 networks:
   proxy_net:
     external: true

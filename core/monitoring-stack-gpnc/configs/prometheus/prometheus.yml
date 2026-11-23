@@ -53,3 +53,10 @@ scrape_configs:
           node: 'primary'
     file_sd_configs:
       - files: [ '/etc/prometheus/targets/cadvisor.yml' ]
+
+  - job_name: backrest
+    static_configs:
+      - targets: [ 'backrest-exporter:9797' ]
+        labels:
+          instance: 'primary'
+          node: 'primary'

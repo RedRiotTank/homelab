@@ -220,6 +220,7 @@ queries, the stack includes a small read-only bot in `bot/telegram-bot.py`:
 
 - `/alerts` — active alerts grouped by node, with severity, device and container.
 - `/containers` — every container, grouped by node, with CPU, memory and limits.
+- `/backups` — Backrest plan status, last success, next run and 30-day counts.
 - `/silences` — active silences and their matchers.
 - `/status` — Alertmanager version, uptime and cluster state.
 - `/help`, `/id` — command list and current chat ID.

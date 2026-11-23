@@ -170,6 +170,7 @@ services:
     environment:
       - ALERTMANAGER_URL=http://alertmanager:9093
       - PROMETHEUS_URL=${PROMETHEUS_URL:-http://prometheus:9090}
+      - BACKREST_STATUS_URL=${BACKREST_STATUS_URL:-http://backrest-exporter:9797/status}
       - BOT_CONFIG_FILE=/config/alertmanager.yml
       - TELEGRAM_ALLOWED_CHAT_IDS=${TELEGRAM_ALLOWED_CHAT_IDS:-}
       - NODE_DISPLAY_NAMES=${NODE_DISPLAY_NAMES:-}

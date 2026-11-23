@@ -42,8 +42,9 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 
 | File | Purpose |
 | --- | --- |
-| `docker-compose.yml` | Base, portable service definition (image, volumes). No network attachment — not reachable through the reverse proxy on its own. |
-| `docker-compose.override.yml` | Attaches the container to `proxy_net` (ingress) and `monitoring_net` (logging), and injects Promtail labels. **Not optional** — `proxy_net` lives here instead of the base file, so the UI isn't reachable via Nginx Proxy Manager without it. |
+| `docker-compose.yml` | Base, portable service definitions for Backrest and its read-only status exporter. No network attachment — not reachable through the reverse proxy on its own. |
+| `docker-compose.override.yml` | Attaches Backrest to `proxy_net` and `monitoring_net`, attaches the exporter to `monitoring_net`, and injects Promtail labels. **Not optional** — `proxy_net` lives here instead of the base file, so the UI isn't reachable via Nginx Proxy Manager without it. |
+| `backrest-exporter.py` | Read-only exporter that queries the Backrest API and exposes `/metrics` and `/status` on the internal monitoring network. |
 | `.env.example` | Template for all environment variables consumed by `docker-compose.yml`. |
 
 ## Configuration & Environment Variables
@@ -59,6 +60,10 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
 | `HOST_SRV_DIR` | `/srv` | Backup source for bulk/shared data. |
 | `BACKREST_REPO_DIR` | `/mnt/external_backups` | Read-write destination for Restic repositories. |
 | `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | Host Docker socket, enabling pre/post-snapshot hooks. |
+| `BACKREST_EXPORTER_USER` | `prometheus` | Dedicated Backrest API user used by the exporter. |
+| `BACKREST_EXPORTER_PASSWORD` | _(required)_ | Password for that API user. Keep it local; never commit it. |
+| `BACKREST_STALE_SECONDS` | `129600` | Age after which a plan is considered stale (36 hours). |
+| `BACKREST_REFRESH_SECONDS` | `60` | How often the exporter refreshes its cached status. |
 
 > ⚠️ **Recursive Backup Protection:** If `BACKREST_REPO_DIR` lives inside any of the source trees (for example, inside `/srv`), explicitly add that path to the exclusion list (e.g., `/backup/srv/backups/**`) to prevent Restic from backing up its own repository in an infinite loop.
 
@@ -108,6 +113,29 @@ The Docker daemon socket (`/var/run/docker.sock`) is mounted read-only so Backre
   - **Cloud remotes:** Point to `rclone:<remote_name>:<bucket_or_path>`.
 
 ## Specific Notes
+
+### Prometheus, Alerting and Telegram
+
+The stack includes `backrest-exporter`, a read-only helper that authenticates to the Backrest API and exposes:
+
+- `/metrics` for Prometheus.
+- `/status` JSON for the Telegram bot's `/backups` command.
+
+Create a dedicated Backrest API user (for example `prometheus`), set
+`BACKREST_EXPORTER_USER` and `BACKREST_EXPORTER_PASSWORD` in the stack
+environment, and let the exporter run on the internal `monitoring` network. It
+does not publish a host port.
+
+Prometheus alerts on:
+
+- `BackrestDown` — exporter/API unreachable.
+- `BackrestBackupFailed` — the last backup for a plan failed.
+- `BackrestBackupMissing` — no successful backup in the 30-day history.
+- `BackrestBackupStale` — last successful backup older than `BACKREST_STALE_SECONDS`.
+- `BackrestBackupCompleted` — a successful backup timestamp changed (one info notification per group).
+
+A repository outage normally surfaces as a failed or stale plan backup; the
+exporter's `backrest_up` metric covers the API itself being unreachable.
 
 ### Recommended Backup Strategy
 

@@ -277,3 +277,50 @@ groups:
     labels:
       severity: warning
 
+- name: backrest
+  rules:
+  - alert: BackrestDown
+    annotations:
+      summary: "Backrest exporter/API is down"
+      description: "Prometheus has been unable to read Backrest status for more than 5 minutes."
+    labels:
+      severity: critical
+    expr: backrest_up == 0
+    for: 5m
+
+  - alert: BackrestBackupFailed
+    annotations:
+      summary: "Backup failed: {{ $labels.plan_id }}"
+      description: "The last Backrest backup for plan {{ $labels.plan_id }} on repo {{ $labels.repo_id }} failed."
+    labels:
+      severity: critical
+    expr: backrest_plan_last_backup_failed == 1
+    for: 5m
+
+  - alert: BackrestBackupMissing
+    annotations:
+      summary: "No successful backup: {{ $labels.plan_id }}"
+      description: "Backrest has no successful backup in its 30-day history for plan {{ $labels.plan_id }} on repo {{ $labels.repo_id }}."
+    labels:
+      severity: warning
+    expr: backrest_plan_no_backup == 1
+    for: 15m
+
+  - alert: BackrestBackupStale
+    annotations:
+      summary: "Backup is stale: {{ $labels.plan_id }}"
+      description: "The last successful backup for plan {{ $labels.plan_id }} on repo {{ $labels.repo_id }} is older than the configured threshold (default 36 hours)."
+    labels:
+      severity: warning
+    expr: backrest_plan_stale == 1
+    for: 10m
+
+  - alert: BackrestBackupCompleted
+    annotations:
+      summary: "Backup completed: {{ $labels.plan_id }}"
+      description: "Backrest recorded a successful backup for plan {{ $labels.plan_id }} on repo {{ $labels.repo_id }}."
+    labels:
+      severity: info
+    expr: changes(backrest_plan_last_success_timestamp_seconds[10m]) > 0
+    for: 1m
+

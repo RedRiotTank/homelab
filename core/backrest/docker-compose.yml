@@ -35,6 +35,26 @@ services:
       # Destination storage repository (read-write for snapshots)
       - "${BACKREST_REPO_DIR:-/mnt/backups}:/repos/external:rw"
 
+  backrest-exporter:
+    image: python:3.12-alpine
+    cpus: 0.25
+    mem_limit: 128m
+    container_name: backrest-exporter
+    restart: unless-stopped
+    command:
+      - python
+      - /app/backrest-exporter.py
+    environment:
+      - BACKREST_URL=http://backrest:9898
+      - BACKREST_EXPORTER_USER=${BACKREST_EXPORTER_USER:-prometheus}
+      - BACKREST_EXPORTER_PASSWORD=${BACKREST_EXPORTER_PASSWORD}
+      - BACKREST_STALE_SECONDS=${BACKREST_STALE_SECONDS:-129600}
+      - REFRESH_SECONDS=${BACKREST_REFRESH_SECONDS:-60}
+    volumes:
+      - ./backrest-exporter.py:/app/backrest-exporter.py:ro
+    depends_on:
+      - backrest
+
 volumes:
   backrest_data:
     name: backrest_data
