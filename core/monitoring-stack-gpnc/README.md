@@ -101,7 +101,7 @@ monitoring-stack-gpnc/
 | --- | --- | --- |
 | `GRAFANA_VERSION` | `12.0.0` | Grafana image tag. |
 | `PROMETHEUS_VERSION` | `v2.42.0` | Prometheus image tag. |
-| `CADVISOR_VERSION` | `v0.46.0` | cAdvisor image tag. |
+| `CADVISOR_VERSION` | `v0.55.1` | cAdvisor image tag (required for Docker 29 containerd snapshotter). |
 | `NODE_EXPORTER_VERSION` | `v1.5.0` | Node Exporter image tag. |
 | `ALERTMANAGER_VERSION` | `v0.25.0` | Alertmanager image tag. |
 | `REDIS_VERSION` | `6` | Redis image tag. |

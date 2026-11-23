@@ -65,7 +65,7 @@ Unlike most other stacks in this repo, there is no `docker-compose.override.yml`
 | --- | --- | --- |
 | `NODE_HOSTNAME` | `agent` | Identifies this node in container names and in the `host`/`instance` labels seen centrally in Grafana/Prometheus. |
 | `LOKI_URL` | _(required)_ | Push endpoint for the central Loki, reached over the Tailscale mesh (e.g. `http://100.x.x.x:3100/loki/api/v1/push`). |
-| `CADVISOR_VERSION` | `v0.46.0` | `zcube/cadvisor` image tag. |
+| `CADVISOR_VERSION` | `v0.55.1` | `gcr.io/cadvisor/cadvisor` image tag (required for Docker 29 containerd snapshotter). |
 | `NODE_EXPORTER_VERSION` | `v1.5.0` | `prom/node-exporter` image tag. |
 | `PROMTAIL_VERSION` | `3.5.0` | `grafana/promtail` image tag. |
 | `CADVISOR_PORT` | `8080` | Host port cAdvisor is scraped on. |
