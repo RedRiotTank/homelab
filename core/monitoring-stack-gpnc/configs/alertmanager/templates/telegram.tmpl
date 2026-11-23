@@ -21,7 +21,7 @@
 {{ define "telegram.alert" -}}
 {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} <b>{{ .Labels.alertname }}</b>
 {{- with .Labels.severity }} · <b>{{ . | toUpper }}</b>{{ end }}
-{{- with .Labels.instance }} · <code>{{ . }}</code>{{ end }}
+{{- if .Labels.node }} · 🖥 <code>{{ .Labels.node }}</code>{{ else }}{{ with .Labels.instance }} · 🖥 <code>{{ . }}</code>{{ end }}{{ end }}
 {{- with .Labels.device }} · 💾 <code>{{ . }}</code>{{ end }}
 {{- with .Labels.name }} · 📦 <code>{{ . }}</code>{{ end }}
 {{- with .Annotations.summary }}

@@ -4,3 +4,4 @@
   labels:
     container: node-exporter
     instance: '<edge-node-name>'
+    node: '<edge-node-name>'

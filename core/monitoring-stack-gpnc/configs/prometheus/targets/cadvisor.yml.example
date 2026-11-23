@@ -4,3 +4,4 @@
   labels:
     container: cadvisor
     instance: '<edge-node-name>'
+    node: '<edge-node-name>'

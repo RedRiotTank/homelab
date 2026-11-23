@@ -218,7 +218,7 @@ UI and the UAR; notification messages are kept concise.
 Alertmanager's Telegram integration only **sends** messages. For on-demand
 queries, the stack includes a small read-only bot in `bot/telegram-bot.py`:
 
-- `/alerts` — active alerts, grouped with severity, instance and device.
+- `/alerts` — active alerts grouped by node, with severity, device and container.
 - `/silences` — active silences and their matchers.
 - `/status` — Alertmanager version, uptime and cluster state.
 - `/help`, `/id` — command list and current chat ID.
@@ -228,6 +228,14 @@ polling, so it needs no inbound port or public domain. It reads the bot token
 and default chat ID from the same `ALERTMANAGER_CONFIG_FILE` used by
 Alertmanager, so there is no second secret to manage. `TELEGRAM_ALLOWED_CHAT_IDS`
 can add extra comma-separated chats; it defaults to the configured chat ID.
+
+Alerts carry a `node` label (`primary` for the local targets, the configured
+name for each remote target). The bot groups by that label. To show friendly
+host names, set `NODE_DISPLAY_NAMES` in the stack environment:
+
+```env
+NODE_DISPLAY_NAMES=primary:primary-node,edge-node:edge-node-1
+```
 
 Enable it with the `telegram-bot` profile:
 
@@ -240,7 +248,7 @@ default. It is read-only: it can list alerts and silences but cannot create or
 delete silences. Only one process should call Telegram `getUpdates` for a bot
 token; stop manual `getUpdates` calls while the bot is running.
 
-The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by node-exporter.
+The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by node-exporter. `NodeDown` alerts when Prometheus cannot scrape a node-exporter target for more than 2 minutes, so an unreachable node is reported as well.
 
 ### Scraping Remote Nodes
 
@@ -249,11 +257,12 @@ New [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) nodes are **not*
 - `configs/prometheus/targets/node-exporter.yml`
 - `configs/prometheus/targets/cadvisor.yml`
 
-Copy the matching `*.yml.example` file, add one target group per edge node, and reload/restart Prometheus. The real files are ignored by Git because they normally contain private hostnames or IPs. Use an address reachable from the Prometheus container (for example a VPN/tailnet address) and a label such as `instance: edge-node-1` for each node.
+Copy the matching `*.yml.example` file, add one target group per edge node, and reload/restart Prometheus. The real files are ignored by Git because they normally contain private hostnames or IPs. Use an address reachable from the Prometheus container (for example a VPN/tailnet address) and set a stable `node` label for each node. Local targets use `node: primary`.
 
 ```yaml
 - targets: [ '<edge-node>:9100' ]
   labels:
     container: node-exporter
     instance: '<edge-node-name>'
+    node: '<edge-node-name>'
 ```

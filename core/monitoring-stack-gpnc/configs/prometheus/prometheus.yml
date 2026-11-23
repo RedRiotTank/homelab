@@ -21,6 +21,7 @@ scrape_configs:
         labels:
           container: 'prometheus'
           instance: 'primary'
+          node: 'primary'
 
   - job_name: alertmanager
     static_configs:
@@ -28,6 +29,7 @@ scrape_configs:
         labels:
           container: 'alertmanager'
           instance: 'primary'
+          node: 'primary'
 
   # Local exporters plus any remote edge-node exporters listed in
   # /etc/prometheus/targets/node-exporter.yml. That file is local and is not
@@ -38,6 +40,7 @@ scrape_configs:
         labels:
           container: 'node-exporter'
           instance: 'primary'
+          node: 'primary'
     file_sd_configs:
       - files: [ '/etc/prometheus/targets/node-exporter.yml' ]
 
@@ -47,5 +50,6 @@ scrape_configs:
         labels:
           container: 'cadvisor'
           instance: 'primary'
+          node: 'primary'
     file_sd_configs:
       - files: [ '/etc/prometheus/targets/cadvisor.yml' ]

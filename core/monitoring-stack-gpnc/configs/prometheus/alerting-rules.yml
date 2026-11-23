@@ -19,6 +19,15 @@ groups:
     expr: (rate(node_vmstat_pgmajfault[1m]) > 1000) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}
     for: 2m
 
+  - alert: NodeDown
+    annotations:
+      summary: "Node exporter on {{ $labels.instance }} is down"
+      description: "Prometheus has been unable to scrape node-exporter on {{ $labels.instance }} (job {{ $labels.job }}) for more than 2 minutes."
+    labels:
+      severity: critical
+    expr: up{job="node-exporter"} == 0
+    for: 2m
+
   - alert: NodeFilesystemSpaceFillingUp
     annotations:
       description: "Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf \"%.2f\" $value }}% available space left and is filling up."

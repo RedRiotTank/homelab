@@ -27,7 +27,15 @@ TELEGRAM_API = os.environ.get("TELEGRAM_API_URL", "https://api.telegram.org").rs
 ALERTMANAGER_URL = os.environ.get("ALERTMANAGER_URL", "http://alertmanager:9093").rstrip("/")
 CONFIG_FILE = os.environ.get("BOT_CONFIG_FILE", "/config/alertmanager.yml")
 ALLOWED_ENV = os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS", "")
+NODE_NAMES_ENV = os.environ.get("NODE_DISPLAY_NAMES", "")
 POLL_TIMEOUT = int(os.environ.get("POLL_TIMEOUT", "50"))
+
+NODE_NAMES: dict[str, str] = {}
+for item in (part.strip() for part in NODE_NAMES_ENV.split(",")):
+    if ":" in item:
+        key, value = item.split(":", 1)
+        if key.strip() and value.strip():
+            NODE_NAMES[key.strip()] = value.strip()
 
 
 def log(message: str) -> None:
@@ -115,6 +123,14 @@ def severity_icon(severity: str) -> str:
     )
 
 
+def node_name(alert: dict) -> str:
+    labels = alert.get("labels") or {}
+    node = labels.get("node") or labels.get("instance") or "unknown"
+    if ":" in node and not node.startswith("["):
+        node = node.split(":", 1)[0]
+    return NODE_NAMES.get(node, node)
+
+
 def format_alert(alert: dict) -> str:
     labels = alert.get("labels") or {}
     annotations = alert.get("annotations") or {}
@@ -125,7 +141,6 @@ def format_alert(alert: dict) -> str:
     if severity:
         meta.append(f"<b>{escape(severity.upper())}</b>")
     for key, emoji in (
-        ("instance", "🖥"),
         ("device", "💾"),
         ("name", "📦"),
         ("job", "⚙️"),
@@ -149,8 +164,23 @@ def format_alert(alert: dict) -> str:
 def format_alerts(alerts: list[dict]) -> str:
     if not alerts:
         return "✅ <b>No active alerts</b>"
+    groups: dict[str, list[dict]] = {}
+    for alert in alerts:
+        groups.setdefault(node_name(alert), []).append(alert)
+    severity_rank = {"critical": 0, "warning": 1, "info": 2}
     blocks = [f"🔥 <b>{len(alerts)} active alert{'s' if len(alerts) != 1 else ''}</b>"]
-    blocks.extend(format_alert(alert) for alert in alerts)
+    for node in sorted(groups, key=str.lower):
+        blocks.append(f"🖥 <b>Node: {escape(node)}</b>")
+        items = sorted(
+            groups[node],
+            key=lambda alert: (
+                severity_rank.get(
+                    ((alert.get("labels") or {}).get("severity") or "").lower(), 9
+                ),
+                (alert.get("labels") or {}).get("alertname", ""),
+            ),
+        )
+        blocks.extend(format_alert(alert) for alert in items)
     return "\n\n".join(blocks)
 
 
