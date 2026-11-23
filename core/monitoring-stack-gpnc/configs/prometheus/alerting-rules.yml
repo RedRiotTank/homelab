@@ -59,7 +59,7 @@ groups:
       and
         node_filesystem_readonly{job="node-exporter",fstype!=""} == 0
       )
-    for: 1h
+    for: 10m
     labels:
       severity: warning
   - alert: NodeFilesystemAlmostOutOfSpace
@@ -72,7 +72,7 @@ groups:
       and
         node_filesystem_readonly{job="node-exporter",fstype!=""} == 0
       )
-    for: 1h
+    for: 10m
     labels:
       severity: critical
   - alert: NodeFilesystemFilesFillingUp
@@ -249,22 +249,4 @@ groups:
     for: 5m
     labels:
       severity: warning
-
-  - alert: HostFilesystemUsageHigh
-    annotations:
-      summary: "Filesystem {{ $labels.device }} on {{ $labels.instance }} is above 80% usage"
-      description: "Filesystem {{ $labels.device }} on {{ $labels.instance }} is using more than 80% of its space.\nVALUE = {{ $value }}\nLABELS = {{ $labels }}"
-    expr: container_fs_usage_bytes{device=~"/dev/.+"} / (container_fs_limit_bytes{device=~"/dev/.+"} > 0) > 0.8
-    for: 5m
-    labels:
-      severity: warning
-
-  - alert: HostFilesystemAlmostOut
-    annotations:
-      summary: "Filesystem {{ $labels.device }} on {{ $labels.instance }} is almost out of space"
-      description: "Filesystem {{ $labels.device }} on {{ $labels.instance }} is using more than 90% of its space.\nVALUE = {{ $value }}\nLABELS = {{ $labels }}"
-    expr: container_fs_usage_bytes{device=~"/dev/.+"} / (container_fs_limit_bytes{device=~"/dev/.+"} > 0) > 0.9
-    for: 5m
-    labels:
-      severity: critical
 

@@ -181,7 +181,7 @@ Four alternative, ready-to-edit templates exist in the same directory for real n
 
 To activate one: fill in its placeholder credentials (API keys, webhook URLs, tokens), then update the `alertmanager` service's volume mount in `docker-compose.yml` to point at the chosen file instead of the fallback, and restart the `alertmanager` container. Until you do that, alerts stay in the local receiver UI and are not emailed or pushed anywhere.
 
-The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by cAdvisor and node-exporter.
+The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by node-exporter.
 
 ### Scraping Remote Nodes
 
