@@ -108,7 +108,8 @@ monitoring-stack-gpnc/
 | `GRAFANA_ROOT_URL` | `https://monitoring.yourdomain.com/` | Must match the public/reverse-proxy URL for correct OAuth/link generation. |
 | `GRAFANA_DOMAIN` | `monitoring.yourdomain.com` | Used for `GF_SERVER_DOMAIN`. |
 | `MONITORING_CPUS` | `0.5` | Per-service CPU limit (applied uniformly). |
-| `MONITORING_MEM_LIMIT` | `512m` | Per-service memory limit (applied uniformly). |
+| `MONITORING_MEM_LIMIT` | `512m` | Default memory limit for the stack. |
+| `PROMETHEUS_MEM_LIMIT` | `1g` | Prometheus-specific memory limit; overrides `MONITORING_MEM_LIMIT` for the Prometheus container. |
 | `GRAFANA_PORT` / `PROMETHEUS_PORT` / `ALERTMANAGER_PORT` / `ALERT_RECEIVER_PORT` / `REDIS_PORT` | `127.0.0.1:<port>` | Host bindings for management ports. Keep them on loopback when running behind [proxy-stack](../proxy-stack/README.md). |
 | `LOKI_PORT` | `3100` | Loki push/query port. It must be reachable from every Promtail instance; restrict access with a private network or firewall. |
 | `GRAFANA_DATA_VOLUME` / `PROMETHEUS_DATA_VOLUME` / `LOKI_DATA_VOLUME` | `monitoring-stack-gpnc_grafana-data` / `..._prometheus-data` / `..._loki-data` | Names of the pre-existing **external** volumes (see prerequisite below). |
@@ -169,14 +170,18 @@ make open    # opens http://localhost:3000/ (Grafana)
 
 ### Alerting Channel Templates
 
-`docker-compose.yml` mounts `configs/alertmanager/alertmanager-fallback-config.yml` by default, which routes all alerts to the local `uncomplicated-alert-receiver` webhook viewer — no external credentials required. Four alternative, ready-to-edit templates exist in the same directory for real notification channels, each with severity-based routing already configured:
+`docker-compose.yml` mounts `configs/alertmanager/alertmanager-fallback-config.yml` by default, which routes all alerts to the local `uncomplicated-alert-receiver` webhook viewer — no external credentials required. The receiver is exposed only on `127.0.0.1:${ALERT_RECEIVER_PORT:-9094}` and is **not** attached to `proxy_net`; open it through an SSH tunnel or add a reverse-proxy host if you want remote access. The fallback route groups for 30 s, re-groups every 5 min, and repeats an ongoing alert every 4 h.
+
+Four alternative, ready-to-edit templates exist in the same directory for real notification channels, each with severity-based routing already configured:
 
 - `alertmanager-slack-config.yml` — Slack incoming webhook.
 - `alertmanager-email-config.yml` — SMTP/email (e.g. SendGrid).
 - `alertmanager-opsgenie-config.yml` — Opsgenie API.
 - `alertmanager-pushover-config.yml` — Pushover push notifications.
 
-To activate one: fill in its placeholder credentials (API keys, webhook URLs, tokens), then update the `alertmanager` service's volume mount in `docker-compose.yml` to point at the chosen file instead of the fallback, and restart the `alertmanager` container.
+To activate one: fill in its placeholder credentials (API keys, webhook URLs, tokens), then update the `alertmanager` service's volume mount in `docker-compose.yml` to point at the chosen file instead of the fallback, and restart the `alertmanager` container. Until you do that, alerts stay in the local receiver UI and are not emailed or pushed anywhere.
+
+The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by cAdvisor and node-exporter.
 
 ### Scraping Remote Nodes
 

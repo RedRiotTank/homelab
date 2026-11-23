@@ -70,7 +70,7 @@ services:
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     cpus: ${MONITORING_CPUS:-0.5}
-    mem_limit: ${MONITORING_MEM_LIMIT:-512m}
+    mem_limit: ${PROMETHEUS_MEM_LIMIT:-1g}
     networks:
       - monitoring
     labels:
@@ -107,6 +107,7 @@ services:
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
       - '--collector.filesystem.ignored-mount-points'
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
     cpus: ${MONITORING_CPUS:-0.5}
