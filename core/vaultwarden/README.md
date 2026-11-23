@@ -4,7 +4,7 @@ Self-hosted, lightweight implementation of the Bitwarden password-manager server
 
 ## Architecture & Design Decisions
 
-Vaultwarden uses a **host bind mount**, not a named Docker volume. In the deployed layout the data lives at `VAULTWARDEN_DATA_DIR`, so the SQLite database, attachments, and RSA key pair are visible/restorable from the host and are covered by [backrest](../backrest/README.md)'s `HOST_OPT_DIR` (`/opt`) source. Backrest also takes a consistent SQLite dump and copies the attachments and keys via its pre-backup hook, so the live WAL database is never backed up half-written.
+Vaultwarden uses a **host bind mount**, not a named Docker volume. In the deployed layout the data lives in the directory configured by `VAULTWARDEN_DATA_DIR`, so the SQLite database, attachments, and RSA key pair are visible/restorable from the host and are covered by [backrest](../backrest/README.md)'s `HOST_OPT_DIR` (`/opt`) source. Backrest also takes a consistent SQLite dump and copies the attachments and keys via its pre-backup hook, so the live WAL database is never backed up half-written.
 
 The container publishes no host port at all — `docker-compose.yml` has no `ports:` mapping, only a commented-out one for local/debug use. It's reached exclusively through [Nginx Proxy Manager](../proxy-stack/README.md) over the container network, via the `proxy_net` attachment carried in `docker-compose.override.yml` (see [File Structure](#file-structure) for why that differs from other `core/` stacks). Real-time sync (new/changed items pushed instantly to unlocked clients) relies on Vaultwarden's built-in WebSocket notifications hub, served on the same port as the web vault — the reverse proxy just needs WebSocket upgrade support enabled on the proxy host entry, not a separate port or container.
 
@@ -25,7 +25,7 @@ The `/admin` diagnostics and user-management panel is gated behind `ADMIN_TOKEN`
 
 - **[proxy-stack](../proxy-stack/README.md)** — Nginx Proxy Manager performs TLS-terminated routing to the container, reached over the shared external `proxy_net` network. Enable the **Websockets Support** toggle on the proxy host entry so the `/notifications/hub` endpoint works for live sync.
 - **[monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md)** — Container logs are shipped to the central Promtail/Loki pipeline via the external `monitoring_net` Docker network (actual network name: `monitoring`), attached through `docker-compose.override.yml`.
-- **[backrest](../backrest/README.md)** — `vw-data` lives at `VAULTWARDEN_DATA_DIR`, which is inside Backrest's `HOST_OPT_DIR` (`/opt`) source. Backrest's pre-backup hook also takes a consistent SQLite dump and copies attachments/keys, so no additional backup source is required.
+- **[backrest](../backrest/README.md)** — the data directory configured by `VAULTWARDEN_DATA_DIR` is inside Backrest's `HOST_OPT_DIR` (`/opt`) source. Backrest's pre-backup hook also takes a consistent SQLite dump and copies attachments/keys, so no additional backup source is required.
 
 ## File Structure
 
@@ -45,7 +45,7 @@ The `/admin` diagnostics and user-management panel is gated behind `ADMIN_TOKEN`
 | `SIGNUPS_ALLOWED` | `false` | Allow new account registration. Recommended to flip to `false` once all accounts are created. |
 | `ADMIN_TOKEN` | _(required)_ | Secures the `/admin` panel. Generate with `openssl rand -base64 48`. |
 | `VAULTWARDEN_PORT` | `127.0.0.1:8083` | Unused by default (the `ports:` mapping in `docker-compose.yml` is commented out). Only relevant if you uncomment that line for local/debug access. |
-| `VAULTWARDEN_DATA_DIR` | `VAULTWARDEN_DATA_DIR` | Host bind-mount path for the SQLite database, attachments, and RSA keys. |
+| `VAULTWARDEN_DATA_DIR` | `/opt/vaultwarden/vw-data` | Host bind-mount path for the SQLite database, attachments, and RSA keys. |
 | `TZ` | `UTC` | Container timezone, used for log timestamps. |
 
 ## Deployment & Operational Commands
