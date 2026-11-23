@@ -91,7 +91,7 @@ Persistent state lives outside the clone:
 - `/opt/compose/<stack>` for application stacks.
 - Named Docker volumes for internal state that should stay host-path-agnostic.
 
-`/home/deployer/homelab` is the developer clone used for commits and pushes; Komodo does not deploy from it directly. Overrides are versioned in Git next to the base compose file. Host-based stacks (`arr-stack`, `portfolio`, `pseudorandomometricsequencesapi`) are the documented exception: they set `files_on_host` and live entirely under `/opt`.
+`/home/deployer/homelab` is the developer clone used for commits and pushes; Komodo does not deploy from it directly. Overrides are versioned in Git next to the base compose file. Host-based stacks (`arr-stack`, `portfolio`, `pseudorandomometricsequencesapi`) are the documented exception: they set `files_on_host` and live under `/opt/compose`. Portfolio and pseudo are also deployed by their own GitHub Actions through the `/opt/portfolio` and `/opt/pseudorandomometricsequencesapi` symlinks. RedAlchemy is outside Komodo: it lives in `/opt/redalchemy` and is deployed by its GitHub Actions workflows (PM2 backend, host Nginx frontend).
 
 ## Conventions Shared Across `core/` Stacks
 
