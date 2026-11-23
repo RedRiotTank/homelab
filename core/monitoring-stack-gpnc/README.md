@@ -208,6 +208,33 @@ selected by `ALERTMANAGER_CONFIG_FILE`. The `alertmanager.yml` shipped inside
 the image is not used. Full alert labels remain available in the Alertmanager
 UI and the UAR; notification messages are kept concise.
 
+### Telegram Query Bot (Optional)
+
+Alertmanager's Telegram integration only **sends** messages. For on-demand
+queries, the stack includes a small read-only bot in `bot/telegram-bot.py`:
+
+- `/alerts` — active alerts, grouped with severity, instance and device.
+- `/silences` — active silences and their matchers.
+- `/status` — Alertmanager version, uptime and cluster state.
+- `/help`, `/id` — command list and current chat ID.
+
+The bot uses inline buttons (`Alerts`, `Silences`, `Status`, `Refresh`) and long
+polling, so it needs no inbound port or public domain. It reads the bot token
+and default chat ID from the same `ALERTMANAGER_CONFIG_FILE` used by
+Alertmanager, so there is no second secret to manage. `TELEGRAM_ALLOWED_CHAT_IDS`
+can add extra comma-separated chats; it defaults to the configured chat ID.
+
+Enable it with the `telegram-bot` profile:
+
+```env
+COMPOSE_PROFILES=telegram-bot
+```
+
+Then recreate the stack (or just the new service). The service is disabled by
+default. It is read-only: it can list alerts and silences but cannot create or
+delete silences. Only one process should call Telegram `getUpdates` for a bot
+token; stop manual `getUpdates` calls while the bot is running.
+
 The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by node-exporter.
 
 ### Scraping Remote Nodes

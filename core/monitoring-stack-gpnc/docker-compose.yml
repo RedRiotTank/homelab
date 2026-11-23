@@ -156,6 +156,34 @@ services:
       <<: *default-labels
     logging: *default-logging
 
+  alertmanager-telegram-bot:
+    image: python:3.12-alpine
+    container_name: alertmanager-telegram-bot
+    restart: unless-stopped
+    profiles:
+      - telegram-bot
+    command:
+      - python
+      - /app/telegram-bot.py
+    environment:
+      - ALERTMANAGER_URL=http://alertmanager:9093
+      - BOT_CONFIG_FILE=/config/alertmanager.yml
+      - TELEGRAM_ALLOWED_CHAT_IDS=${TELEGRAM_ALLOWED_CHAT_IDS:-}
+      - TELEGRAM_API_URL=${TELEGRAM_API_URL:-https://api.telegram.org}
+      - POLL_TIMEOUT=${TELEGRAM_POLL_TIMEOUT:-50}
+    volumes:
+      - ./bot/telegram-bot.py:/app/telegram-bot.py:ro
+      - ${ALERTMANAGER_CONFIG_FILE:-./configs/alertmanager/alertmanager-fallback-config.yml}:/config/alertmanager.yml:ro
+    depends_on:
+      - alertmanager
+    cpus: ${MONITORING_CPUS:-0.5}
+    mem_limit: ${MONITORING_MEM_LIMIT:-512m}
+    networks:
+      - monitoring
+    labels:
+      <<: *default-labels
+    logging: *default-logging
+
   redis:
     image: redis:${REDIS_VERSION:-6}
     container_name: redis
