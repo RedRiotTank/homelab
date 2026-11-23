@@ -248,7 +248,7 @@ default. It is read-only: it can list alerts and silences but cannot create or
 delete silences. Only one process should call Telegram `getUpdates` for a bot
 token; stop manual `getUpdates` calls while the bot is running.
 
-The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by node-exporter. `NodeDown` alerts when Prometheus cannot scrape a node-exporter target for more than 2 minutes, so an unreachable node is reported as well.
+The container memory/CPU rules evaluate every container that has a cgroup limit, not just this monitoring stack. Containers without a CPU or memory limit are skipped by those rules because a percentage of “unlimited” is meaningless. Filesystem rules cover the host filesystems reported by node-exporter. `NodeDown` alerts when Prometheus cannot scrape a node-exporter target for more than 2 minutes, so an unreachable node is reported as well. `NodeHighCpuUsage` and `NodeHighMemoryUsage` warn when a node stays above 90% CPU or memory usage for 10 minutes.
 
 ### Scraping Remote Nodes
 
