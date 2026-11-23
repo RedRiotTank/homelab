@@ -26,9 +26,8 @@ The central observability backbone for the homelab: metrics collection (Promethe
    (local)          (local)          │ (webhook UI)       │      (local docker    sidecars via override,
                                      └────────────────────┘        containers)     e.g. adguard, backrest,
    ▼                  ▼                                                            headscale, proxy-stack,
-[node-exporter]   [cadvisor]  ◄── over Tailscale (<tailnet-ip>) ─── monitoring-agent-gpnc on remote/edge nodes
- @<edge-node-tailnet-ip>       @<edge-node-tailnet-ip>
- (edge-node)   (edge-node)
+[node-exporter]   [cadvisor]  ◄── over the private network ─── monitoring-agent-gpnc on remote/edge nodes
+ (remote node)    (remote node)
 ```
 
 ### Shared `monitoring` network
@@ -72,7 +71,7 @@ This is the stack every other service ships telemetry to. Services that attach t
 - [proxy-stack](../proxy-stack/README.md) — ships container logs via Promtail labels; also the other direction of this relationship — this stack's own `docker-compose.override.yml` attaches `grafana` to proxy-stack's external `proxy_net` network, so the dashboard can be reverse-proxied under a custom domain.
 - [tailscale-client](../tailscale-client/README.md) — labels only (runs in `network_mode: host`, so it cannot join `monitoring_net`; labels are still read by the local Promtail instance on that host).
 - [komodo](../komodo/README.md) — joins both `proxy_net` and `monitoring_net` via its own committed `docker-compose.override.yml`.
-- [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) — remote/edge-node counterpart; its `node-exporter`/`cadvisor` are scraped by this stack's Prometheus over Tailscale, and its Promtail pushes logs directly to this stack's Loki via `LOKI_URL`.
+- [monitoring-agent-gpnc](../monitoring-agent-gpnc/README.md) — remote/edge-node counterpart; its `node-exporter`/`cadvisor` are scraped by this stack's Prometheus over the private network, and its Promtail pushes logs directly to this stack's Loki via `LOKI_URL`.
 
 ## File Structure
 

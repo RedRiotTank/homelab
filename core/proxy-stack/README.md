@@ -54,13 +54,6 @@ Both controls are detailed in [Specific Notes](#specific-notes) below.
 | `docker-compose.yml` | Core service definitions: `nginx-proxy` (NPM) and `cloudflare-ddns`. Portable, infrastructure-agnostic. |
 | `docker-compose.override.yml` | Attaches both services to the external `monitoring_net` and injects Promtail logging labels. Optional. |
 | `.env.example` | Template for Cloudflare credentials and NPM port bindings. |
-| `theme-manager/` | Standalone, **not yet integrated** utility (see below). |
-
-### About `theme-manager/`
-
-This directory contains a small standalone Node.js HTTP server (`server.js`) plus a static dashboard (`dashboard.html`) for managing custom NPM error pages (403/404). It exposes a toggle API (`GET /api/themes/:type`, `POST /api/toggle`) that reads/writes a `themes.json` file per error type and serves theme assets from a `/themes` directory under `/custom_error/`.
-
-**This utility is currently not wired into `docker-compose.yml`** — there is no Dockerfile, no service entry, and no volume connecting it to NPM's custom pages directory. It is present in the repository as a standalone tool only. To actually use it, you would need to run it yourself (e.g., `node theme-manager/server.js`) and manually point its `/themes` base directory at the same location NPM serves custom error pages from — no such wiring exists yet in this repo.
 
 ## Configuration & Environment Variables
 

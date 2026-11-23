@@ -59,7 +59,7 @@ slimmer footprint that connects over a private network.
 Two shared Docker networks tie most of this together, both created as `external: true` so they outlive any single stack's lifecycle:
 
 - **`proxy_net`** — owned by [proxy-stack](./proxy-stack/); anything that needs a public or reverse-proxied domain joins it (`docker network create proxy_net`).
-- **`monitoring`** (referenced as `monitoring_net` in other stacks' overrides) — owned by [monitoring-stack-gpnc](./monitoring-stack-gpnc/); anything that wants its logs shipped to Loki joins it.
+- **`monitoring`** — owned by [monitoring-stack-gpnc](./monitoring-stack-gpnc/); anything that wants its logs shipped to Loki joins it (usually as `monitoring_net`, with `name: monitoring`, in other stacks' overrides).
 
 Everything else — `komodo_internal`, `headscale_internal` — is a private network scoped to a single stack's own components and isn't meant to be shared.
 
