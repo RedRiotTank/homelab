@@ -38,8 +38,9 @@ Host paths are parameterized through environment variables:
 
 - `HOST_STACKS_PATH`: Base path on the host where stacks are stored (defaults to `/opt`).
 - `CONTAINER_STACKS_PATH`: Target mount point inside the periphery container (defaults to `/opt`).
+- `PERIPHERY_ROOT_DIRECTORY`: `/opt` on the Periphery service, so Git clones live under `/opt/stacks/<stack>` on the host.
 
-Both can be overridden in `.env` to relocate the stacks directory anywhere on the host filesystem without altering repository code.
+Both path variables can be overridden in `.env` to relocate the stacks directory anywhere on the host filesystem without altering repository code.
 
 ### Node Topology
 

@@ -11,7 +11,7 @@ Unlike the [primary Komodo stack](../komodo/README.md), this directory deploys a
 - **Shared-secret authentication:** The agent trusts any request presenting the correct `KOMODO_PASSKEY`. There is no per-user auth on this side — identity and access control live entirely on the Core server. This is why the passkey must be treated as a credential and kept identical (byte-for-byte) between this `.env` and the primary server's `.env`.
 - **`/var/run/docker.sock` mount:** Grants the agent full access to the host's Docker daemon, which is what allows Komodo Core to deploy, restart, and inspect stacks on this node remotely.
 - **`${HOST_STACKS_PATH}:${CONTAINER_STACKS_PATH}` bind mount:** Mounted at matching paths (both default to `/opt`) so that stack definitions and relative paths referenced by Compose files resolve identically whether Core is orchestrating the primary node or this secondary node. This path parity removes the need for per-node path translation.
-- **`komodo_periphery_data` volume:** Holds the agent's own internal state and stack metadata — kept separate from the Docker socket and stacks mount so the agent's runtime state survives independently of host path changes.
+- **`/opt` host bind mount:** The agent root is `/opt`, so Git clones are created at `/opt/stacks/<stack>` on the host. The Docker socket and this host path are the only mounts.
 - **Host port exposure:** This service has no `docker-compose.override.yml`. The agent's port (`PERIPHERY_PORT`, default `8120`) is published directly in the base `docker-compose.yml` via `${PERIPHERY_BIND_IP:-0.0.0.0}:${PERIPHERY_PORT:-8120}:8120`. Unlike the other stacks in this repo, it does **not** join `proxy_net` or `monitoring_net` — it has no web UI to expose through a reverse proxy, and it is the primary Komodo Core server (potentially on a different host) that must be able to reach it directly over the LAN or the Tailscale/Headscale mesh.
 
 ```text
@@ -96,5 +96,5 @@ Once the container is running, the node must be authorized in the primary Komodo
 
 ## Specific Notes
 
-- `PERIPHERY_ROOT_DIRECTORY` is fixed internally to `/config` (mapped to the `komodo_periphery_data` volume) and is not meant to be overridden via `.env`.
+- `PERIPHERY_ROOT_DIRECTORY` is set to `/opt`, matching the host bind mount, so clones are created at `/opt/stacks/<stack>`. It is not meant to be overridden via `.env`.
 - `PERIPHERY_SSL_ENABLED` is hardcoded to `false` in `docker-compose.yml`, since TLS is expected to be handled by the transport layer (Tailscale/Headscale mesh or LAN) rather than the agent itself — there is no reverse-proxy termination for this service.
