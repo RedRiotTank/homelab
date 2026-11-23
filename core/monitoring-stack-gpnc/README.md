@@ -181,6 +181,11 @@ Ready-to-edit templates for external channels live in the same directory:
 - `alertmanager-opsgenie-config.yml` — Opsgenie API.
 - `alertmanager-pushover-config.yml` — Pushover push notifications.
 
+Telegram notifications use the HTML template in
+`configs/alertmanager/templates/telegram.tmpl` (severity icon, instance, device,
+container, summary, description and age). Edit that file to customize the
+message, then restart Alertmanager.
+
 To activate one:
 
 1. Copy the chosen template to a private location, for example
