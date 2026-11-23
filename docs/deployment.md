@@ -58,6 +58,23 @@ The base compose file should stay portable. Put host-specific concerns in
 If you do not use a shared monitoring stack, remove the `monitoring_net` entries
 and logging labels from the override instead of deleting the whole file.
 
+## Resource limits
+
+Every service in this repository defines a CPU limit and a memory limit. They are
+**baseline caps, not reservations**: they protect the host from a runaway
+container without preventing services from using spare capacity. Adjust them in
+the stack's compose file for your hardware.
+
+The defaults are intentionally conservative:
+
+- Light services: `0.25–0.5` CPU and `128–512 MiB`.
+- Medium applications and databases: `1–2` CPU and `1–2 GiB`.
+- Jellyfin is deliberately higher (`6` CPU / `10 GiB`) because it is the primary
+  media workload and indexing/transcoding can be heavy.
+
+The Telegram bot's `/containers` command shows each container's live CPU and
+memory against its limit. A warning marker appears if a limit is missing.
+
 ## Deployment models
 
 ### Single host

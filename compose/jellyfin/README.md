@@ -6,8 +6,15 @@ A containerized and portable deployment of the Jellyfin media system, configured
 
 - **`docker-compose.yml`**: Core configuration decoupled via environment variables.
 - **`.env.example`**: Template for required environment variables and storage paths.
-- **`docker-compose.override.yml`**: Local override for attaching the `monitoring_net` network (ignored by Git).
+- **`docker-compose.override.yml`**: Override for attaching the `monitoring_net` network (committed with the stack).
 - **Persistent Data**: Configurations live in `/srv/appdata/jellyfin/config`, while media is mounted from `/mnt/media`.
+
+## Resource Limits
+
+Jellyfin is the primary workload on its node, so its defaults are intentionally
+generous: **6 CPUs and 10 GiB of memory**. Override them with `JELLYFIN_CPUS` and
+`JELLYFIN_MEMORY_LIMIT` in `.env`. The limits are expressed through
+`deploy.resources` because the same block reserves the NVIDIA GPU.
 
 ## Setup & Deployment
 

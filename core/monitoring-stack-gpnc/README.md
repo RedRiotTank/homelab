@@ -37,7 +37,7 @@ All services here join a single Docker network literally named `monitoring`, cre
 Despite the name, joining `monitoring`/`monitoring_net` is **not** what makes Promtail or Prometheus pick up another stack's container:
 
 - **Promtail** discovers every container through the mounted Docker socket (`docker_sd_configs` in `configs/promtail/promtail.yaml`) and reads its log files straight off disk — it never talks to the target container over the network. What actually routes a container's logs correctly is the `logging` / `logging_jobname` **labels**, not network membership.
-- **Prometheus** only scrapes the exact targets listed in `configs/prometheus/prometheus.yml` (`prometheus`, `alertmanager`, `node-exporter`, `cadvisor`, local and the remote-node targets over Tailscale). It never scrapes adguard, backrest, vaultwarden, headscale, komodo, or any other app container, regardless of which network they're on.
+- **Prometheus** only scrapes the exact targets listed in `configs/prometheus/prometheus.yml` (`prometheus`, `alertmanager`, `node-exporter`, `cadvisor`, `backrest-exporter`, local and the remote-node targets over the private network). It never scrapes adguard, vaultwarden, headscale, komodo, or any other app container, and it never talks to Backrest directly; the exporter does that. Regardless of which network they are on, unsupported app containers are not scraped.
 
 So for other stacks in this repository, attaching to `monitoring_net` is effectively decorative for telemetry purposes — harmless to keep (e.g. useful for `docker exec <container> curl http://loki:3100/ready` while debugging), but it is the `logging`/`logging_jobname` labels alone that make Promtail ship a container's logs, not the network attachment.
 
@@ -111,6 +111,7 @@ monitoring-stack-gpnc/
 | `MONITORING_MEM_LIMIT` | `512m` | Default memory limit for the stack. |
 | `PROMETHEUS_MEM_LIMIT` | `1g` | Prometheus-specific memory limit; overrides `MONITORING_MEM_LIMIT` for the Prometheus container. |
 | `ALERTMANAGER_CONFIG_FILE` | `./configs/alertmanager/alertmanager-fallback-config.yml` | Alertmanager config mounted at `/etc/alertmanager/config.yml`. Point it at a private file to use Telegram or email. |
+| `TIMEZONE` | `UTC` | Timezone used by the Telegram bot for displayed backup and alert times. |
 | `GRAFANA_PORT` / `PROMETHEUS_PORT` / `ALERTMANAGER_PORT` / `ALERT_RECEIVER_PORT` / `REDIS_PORT` | `127.0.0.1:<port>` | Host bindings for management ports. Keep them on loopback when running behind [proxy-stack](../proxy-stack/README.md). |
 | `LOKI_PORT` | `3100` | Loki push/query port. It must be reachable from every Promtail instance; restrict access with a private network or firewall. |
 | `GRAFANA_DATA_VOLUME` / `PROMETHEUS_DATA_VOLUME` / `LOKI_DATA_VOLUME` | `monitoring-stack-gpnc_grafana-data` / `..._prometheus-data` / `..._loki-data` | Names of the pre-existing **external** volumes (see prerequisite below). |
@@ -244,6 +245,16 @@ Enable it with the `telegram-bot` profile:
 ```env
 COMPOSE_PROFILES=telegram-bot
 ```
+
+Optional bot variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `TELEGRAM_ALLOWED_CHAT_IDS` | configured chat ID | Extra comma-separated chats allowed to use the bot. |
+| `NODE_DISPLAY_NAMES` | empty | Map node labels to display names, e.g. `primary:primary-node,edge-node:edge-node-1`. |
+| `PROMETHEUS_URL` | `http://prometheus:9090` | Prometheus endpoint for `/containers`. |
+| `BACKREST_STATUS_URL` | `http://backrest-exporter:9797/status` | Backrest exporter endpoint for `/backups`. |
+| `TZ` | `${TIMEZONE:-UTC}` | Timezone for displayed times. |
 
 Then recreate the stack (or just the new service). The service is disabled by
 default. It is read-only: it can list alerts and silences but cannot create or

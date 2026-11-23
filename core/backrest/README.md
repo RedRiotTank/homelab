@@ -121,10 +121,18 @@ The stack includes `backrest-exporter`, a read-only helper that authenticates to
 - `/metrics` for Prometheus.
 - `/status` JSON for the Telegram bot's `/backups` command.
 
-Create a dedicated Backrest API user (for example `prometheus`), set
-`BACKREST_EXPORTER_USER` and `BACKREST_EXPORTER_PASSWORD` in the stack
-environment, and let the exporter run on the internal `monitoring` network. It
-does not publish a host port.
+Create a dedicated Backrest API user (for example `prometheus`):
+
+1. In the Backrest UI, open **Settings → Authentication** and add a user with a
+   strong random password.
+2. Set `BACKREST_EXPORTER_USER` and `BACKREST_EXPORTER_PASSWORD` in the stack
+   environment (for example in Komodo), not in the compose file or Git.
+3. Optionally adjust `BACKREST_STALE_SECONDS` (default 36 hours) and
+   `BACKREST_REFRESH_SECONDS` (default 60 seconds).
+
+The exporter runs on the internal `monitoring` network and does not publish a
+host port. If you restore Backrest from an older config backup, recreate the API
+user and update the password.
 
 Prometheus alerts on:
 

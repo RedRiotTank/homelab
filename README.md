@@ -39,6 +39,8 @@ Some stacks depend on shared external Docker networks such as `proxy_net` and
   environment-specific configuration.
 - Overrides belong in `docker-compose.override.yml` when they are host-specific;
   keep the base compose file portable.
+- Each service defines conservative CPU and memory limits. Adjust them for your
+  hardware; see [`docs/deployment.md`](docs/deployment.md#resource-limits).
 
 ## Deployment options
 

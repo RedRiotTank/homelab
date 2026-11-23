@@ -33,9 +33,15 @@ Container names (`cadvisor-${NODE_HOSTNAME}`, `node-exporter-${NODE_HOSTNAME}`, 
 
 cAdvisor needs both to introspect host-level cgroups, namespaces, and process trees for accurate per-container resource metrics — this is the same requirement as the central stack's cAdvisor, just scoped to this single node.
 
-### Image choice: `zcube/cadvisor` vs `gcr.io/cadvisor/cadvisor`
+### cAdvisor image and Docker storage driver
 
-This agent uses `zcube/cadvisor:latest`, a community-maintained fork with broader kernel/architecture compatibility (useful on edge hardware that may run newer or non-standard kernels), instead of the upstream `gcr.io/cadvisor/cadvisor` image used by [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md). The two are functionally equivalent for this agent's purposes.
+This agent uses `gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.55.1}`, the same
+upstream image family as [monitoring-stack-gpnc](../monitoring-stack-gpnc/README.md).
+Docker 29 enables the `containerd-snapshotter` image store on fresh installs;
+older cAdvisor versions (for example v0.49) fail with “failed to identify the
+read-write layer ID” and silently expose no Docker container metrics. cAdvisor
+v0.55.1 supports that layout and reports every Docker container. Keep
+`CADVISOR_VERSION` at v0.55.1 or newer on Docker 29+.
 
 ### Conservative resource limits
 
