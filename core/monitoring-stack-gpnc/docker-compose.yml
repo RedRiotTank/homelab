@@ -159,7 +159,7 @@ services:
     logging: *default-logging
 
   alertmanager-telegram-bot:
-    image: python:3.12-alpine
+    image: python:3.12-slim
     container_name: alertmanager-telegram-bot
     restart: unless-stopped
     profiles:
@@ -176,6 +176,7 @@ services:
       - NODE_DISPLAY_NAMES=${NODE_DISPLAY_NAMES:-}
       - TELEGRAM_API_URL=${TELEGRAM_API_URL:-https://api.telegram.org}
       - POLL_TIMEOUT=${TELEGRAM_POLL_TIMEOUT:-50}
+      - TZ=${TIMEZONE:-UTC}
     volumes:
       - ./bot/telegram-bot.py:/app/telegram-bot.py:ro
       - ${ALERTMANAGER_CONFIG_FILE:-./configs/alertmanager/alertmanager-fallback-config.yml}:/config/alertmanager.yml:ro
