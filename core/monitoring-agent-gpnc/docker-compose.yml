@@ -1,10 +1,12 @@
 services:
   cadvisor:
-    image: zcube/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.46.0}
     container_name: cadvisor-${NODE_HOSTNAME:-agent}
     restart: unless-stopped
     privileged: true
     pid: host
+    command:
+      - '--docker_only=true'
     devices:
       - /dev/kmsg:/dev/kmsg
     volumes:
@@ -27,10 +29,11 @@ services:
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
-      - /:/rootfs:ro
+      - /:/rootfs:ro,rslave
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
       - '--collector.filesystem.ignored-mount-points'
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
     ports:
