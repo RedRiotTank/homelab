@@ -107,12 +107,28 @@ inside a snapshot is therefore six hours.
 
 - After the 2026-11-24 slim change, a Core snapshot restores to approximately
   **733 MiB** (22,210 entries, including 13,972 Romm symlinks). Before the slim
-  change it was 17.86 GiB; old snapshots keep that size until retention/prune.
+  change it was 17.86 GiB; those old snapshots were removed by the controlled
+  prune described in §3.5.
 - HeavyData (Nextcloud user files, Minecraft and AppFlowy) is approximately
   **9.4 GiB** per snapshot.
 - `/srv` has **948 GB free**.
 - A monthly drill restores sequentially and needs roughly **40 GiB** of scratch
   space; the service refuses to start below the configured minimum.
+
+### 3.5 Controlled prune (2026-11-24)
+
+After the slim change, all pre-slim snapshots were removed with an explicit
+`restic forget --prune`, keeping only the new snapshots:
+
+| Repository | Before | After | Remaining snapshots |
+| --- | ---: | ---: | --- |
+| `local-repo-srv` | 14.6 GiB | **516.5 MiB** | `ccbe0a4f` (Core) |
+| `GDrive-RedServer` | 16.833 GiB | **7.867 GiB** | `d2661153` (Core), `3ca5dd9d` (Heavy) |
+| `miixzify` | 16.692 GiB | **7.867 GiB** | `0d69c0ec` (Core), `0f81c337` (Heavy) |
+
+The `GDrive` and `miixzify` figures are the compressed/deduplicated repository
+sizes reported by `restic stats`. Old pre-slim restore points no longer exist;
+the new daily retention starts from these snapshots.
 
 ## 4. Coverage matrix
 
@@ -704,10 +720,15 @@ Validation performed:
 - A **post-slim full drill** on 2026-11-24 at 20:58 passed **56 checks with 0
   failures** in 35m10s. It restored the slim local Core (`ccbe0a4f`, 0.72 GiB),
   the still-pre-slim remote Core (`4466f527`, 17.86 GiB) and the new HeavyData
-  (`0f81c337`, 9.39 GiB: Nextcloud 2.90 GiB, Minecraft 5.78 GiB, AppFlowy
-  729 MiB). The next scheduled cloud Core runs at 02:30/03:00 will make the
-  remote Core slim as well; the December drill will then restore about 10.9 GiB
-  in total.
+  (`0f81c337`, 9.39 GiB).
+- A **controlled forget/prune** then removed all pre-slim snapshots. Repository
+  sizes dropped to **516.5 MiB** (local), **7.867 GiB** (GDrive) and
+  **7.867 GiB** (miixzify). The remaining snapshots are `ccbe0a4f` (local
+  Core), `d2661153`/`3ca5dd9d` (GDrive Core/Heavy) and
+  `0d69c0ec`/`0f81c337` (miixzify Core/Heavy).
+- A **post-prune full drill** at 21:59 passed **56 checks with 0 failures** in
+  12m10s, restoring **10.8 GiB / 28,340 files**: slim local Core, slim remote
+  Core and HeavyData (Nextcloud 2.90 GiB, Minecraft 5.78 GiB, AppFlowy 729 MiB).
 - The service is running, the Prometheus target is `up`, and the next scheduled
   drill is **2026-12-16 04:00 CET**.
 
