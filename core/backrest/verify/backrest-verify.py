@@ -118,7 +118,10 @@ CORE_PATHS = [
 HEAVY_PATHS = [
     item.strip()
     for item in os.environ.get(
-        "BACKREST_VERIFY_HEAVY_PATHS", "/backup/srv/nextcloud_data"
+        "BACKREST_VERIFY_HEAVY_PATHS",
+        "/backup/srv/nextcloud_data,"
+        "/backup/opt/minecraft_servers,"
+        "/backup/docker_volumes/appflowy_minio_data",
     ).split(",")
     if item.strip()
 ]
@@ -928,6 +931,50 @@ def validate_heavy(root: Path, checks: Checks) -> tuple[int, int]:
     return files, size
 
 
+def validate_heavy_extras(root: Path, checks: Checks) -> tuple[int, int]:
+    files_total = 0
+    size_total = 0
+
+    minecraft = root / "backup" / "opt" / "minecraft_servers"
+    if minecraft.is_dir():
+        files, size = tree_metrics(minecraft)
+        files_total += files
+        size_total += size
+        checks.add(
+            "heavy:minecraft",
+            "pass"
+            if files >= 100 and size >= 100 * 1024 * 1024
+            else "fail",
+            f"{files} files, {size / (1024**3):.2f} GiB",
+        )
+    else:
+        checks.add("heavy:minecraft", "fail", "minecraft_servers missing")
+
+    minio = (
+        root
+        / "backup"
+        / "docker_volumes"
+        / "appflowy_minio_data"
+        / "_data"
+        / "appflowy"
+    )
+    if minio.is_dir():
+        files, size = tree_metrics(minio)
+        files_total += files
+        size_total += size
+        checks.add(
+            "heavy:appflowy",
+            "pass"
+            if files >= 10 and size >= 1024 * 1024
+            else "fail",
+            f"{files} files, {size / (1024**2):.1f} MiB",
+        )
+    else:
+        checks.add("heavy:appflowy", "fail", "appflowy MinIO data missing")
+
+    return files_total, size_total
+
+
 def prune_reports() -> None:
     reports = sorted(REPORTS_DIR.glob("report-*.md"))
     for path in reports[:-KEEP_REPORTS] if KEEP_REPORTS > 0 else []:
@@ -1192,6 +1239,11 @@ def run_drill(
                             )
                         else:
                             files, size = validate_heavy(target, checks)
+                            extra_files, extra_size = validate_heavy_extras(
+                                target, checks
+                            )
+                            files += extra_files
+                            size += extra_size
                             restored_files += files
                             restored_bytes += size
                             checks.add(

@@ -518,7 +518,11 @@ restic -r "$REPO" mount /mnt/restic --no-lock --allow-other
 | Host path | Snapshot path | Plan | Restore target |
 | --- | --- | --- | --- |
 | `/var/lib/docker/volumes` | `/backup/docker_volumes` | Core | `/var/lib/docker/volumes` |
-| `/opt` (except `/opt/stacks`) | `/backup/opt` | Core | `/opt` |
+| `/opt` (except `/opt/stacks` and bulk paths) | `/backup/opt` | Core | `/opt` |
+| `/opt/minecraft_servers` | `/backup/opt/minecraft_servers` | HeavyData | `/opt/minecraft_servers` |
+| AppFlowy MinIO volume | `/backup/docker_volumes/appflowy_minio_data` | HeavyData | `/var/lib/docker/volumes/appflowy_minio_data` |
+| Romm covers/resources | `/backup/opt/compose/romm/library/*/covers`, `/backup/opt/compose/romm/resources` | Excluded | Reindex from `/mnt/media` |
+| Nextcloud bundled code | `/backup/opt/compose/nextcloud/app_config/{apps,core,dist,3rdparty,lib,resources}` | Excluded | Recreated by the image |
 | `/home/deployer/homelab` | `/backup/homelab` | Core | `/home/deployer/homelab` |
 | Backrest dumps/scripts | `/data/dbdumps`, `/data/scripts` | Core | `backrest_data` volume |
 | Staged stack envs | `/data/stack-envs` | Core (Phase 1) | `backrest_data` volume |
@@ -540,12 +544,15 @@ restic -r "$REPO" mount /mnt/restic --no-lock --allow-other
       endpoints (selective restore of all critical paths passed).
 - [ ] Complete a full-size `backrest-verify` run and record its duration.
 - [ ] Record the measured RTO.
+- [x] Remove the obsolete `/srv/roms` staging tree; reindex tools are preserved
+      in `/opt/compose/romm/tools`.
 - [ ] Delete the obsolete `/srv/backrest_repo` after confirming it is unused.
 
 ## 16. Performance note
 
-The local Restic repository lives on the portable 1.8 TB USB HDD. Full restores
-are I/O-bound by that disk (roughly 1–3 MB/s for the Core file mix). Scratch on
-the SSD speeds writes and verification, but not source reads. Plan the RTO
-accordingly and prefer a cloud repository restore when the local disk is the
-bottleneck.
+The local Restic repository lives on the portable 1.8 TB USB HDD. The Core
+snapshot is now about 733 MiB after the slim change, but HeavyData (Nextcloud,
+Minecraft and AppFlowy) is about 9.4 GiB and is still I/O-bound by the source
+disk. Scratch on the SSD speeds writes and verification, but not source reads.
+Plan the RTO accordingly and prefer a cloud repository restore when the local
+disk is the bottleneck.

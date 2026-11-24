@@ -67,7 +67,8 @@ check logic. The monthly schedule always restores the full snapshot.
 6. Stack `.env` files, Telegram Alertmanager config, SSH keys, host-config
    whitelist, Compose YAML, Headscale config and Komodo environment.
 7. Vaultwarden keys, NPM and Headscale SQLite databases, NPM TLS certificates.
-8. HeavyData restore from the selected remote repository.
+8. HeavyData restore from the selected remote repository: Nextcloud user files,
+   Minecraft servers and AppFlowy MinIO data.
 
 The exact list is visible in `status.json` under `checks`.
 

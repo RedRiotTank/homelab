@@ -230,8 +230,13 @@ To avoid repository lock collisions and maximize Restic's cross-snapshot dedupli
 
 | Plan Concept | Typical Included Paths | Schedule Pattern | Retention Target | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **Configs & State** | `/backup/homelab`<br>`/backup/opt`<br>`/backup/docker_volumes` | Daily (e.g., `0 3 * * *`) | 7 Daily, 4 Weekly, 6 Monthly | Fast, lightweight snapshots containing application states, `.env` files, databases, and Docker specs. |
-| **Bulk / Heavy Data** | `/backup/srv/<app_data>` | Weekly (e.g., `0 4 * * 0`) | 4 Weekly, 2–3 Monthly | Large media, shared drives, or archive directories. |
+| **Configs & State** | `/backup/homelab`<br>`/backup/opt` (bulk paths excluded)<br>`/backup/docker_volumes` (small state)<br>`/data/dbdumps`<br>`/data/stack-envs`<br>`/data/home-config`<br>`/data/host-config`<br>`/data/scripts` | Daily (e.g., `0 2 * * *`) | 7 Daily, 4 Weekly, 6 Monthly | Lightweight configuration, database dumps, secrets and small state. |
+| **Bulk / Heavy Data** | `/backup/srv/nextcloud_data`<br>`/backup/opt/minecraft_servers`<br>`/backup/docker_volumes/appflowy_minio_data` | Daily (e.g., `0 6 * * *`) | 7 Daily, 4 Weekly, 6 Monthly | Nextcloud user files, Minecraft worlds and AppFlowy files. |
+
+Romm cover art and Nextcloud bundled code are excluded from Core. Romm keeps
+only the tiny library symlinks and `gamelist.xml`; the actual ROMs live on the
+`/mnt/media` rclone mount and are reindexed, not backed up. The Nextcloud image
+provides the bundled code; only `config/`, `custom_apps/` and `themes/` remain.
 
 The deployed Core plans also include `/data/stack-envs`, `/data/home-config` and
 `/data/host-config`, populated by `collect-config.sh`. They are small and change

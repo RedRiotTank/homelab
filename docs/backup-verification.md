@@ -45,9 +45,9 @@ environment on another server.
 
 | Repository | URI | Plans | Last snapshot |
 | --- | --- | --- | --- |
-| `local-repo-srv` | `/repos/external/backrest_repo` (`/srv/backups/backrest_repo`) | Core only | 2026-11-23 02:00 |
-| `GDrive-RedServer` | `rclone:gdrive:backups/redserver` | Core + HeavyData | 2026-11-23 02:30 / 06:00 |
-| `miixzify` | `rclone:chitogeshared:backrest_backup` | Core + HeavyData | 2026-11-23 03:00 / 06:30 |
+| `local-repo-srv` | `/repos/external/backrest_repo` (`/srv/backups/backrest_repo`) | Core only | 2026-11-24 02:00 |
+| `GDrive-RedServer` | `rclone:gdrive:backups/redserver` | Core + HeavyData | 2026-11-24 02:30 / 06:00 |
+| `miixzify` | `rclone:chitogeshared:backrest_backup` | Core + HeavyData | 2026-11-24 03:00 / 06:30 |
 
 Core plans (one per repository) run daily at 02:00, 02:30 and 03:00 and include:
 
@@ -63,7 +63,13 @@ HeavyData plans (cloud only) run daily at 06:00 and 06:30 and include:
 
 ```text
 /backup/srv/nextcloud_data
+/backup/opt/minecraft_servers
+/backup/docker_volumes/appflowy_minio_data
 ```
+
+The Core plans keep configuration and small state. Minecraft, Nextcloud user
+files and AppFlowy files are in HeavyData. Romm cover art/metadata and Nextcloud
+application code are excluded and regenerated.
 
 Retention is 7 daily, 4 weekly and 6 monthly snapshots. `prune` runs on day 1 at
 01:00. `check` runs on day 15 at 01:00 (next: **2026-12-15 01:00**).
@@ -99,21 +105,33 @@ inside a snapshot is therefore six hours.
 
 ### 3.4 Size and capacity
 
-- A Core snapshot restores to approximately **15.5 GiB**.
-- `/srv` has **895 GB free**.
-- A monthly drill restoring the local repo plus one remote repo needs about
-  **35–40 GiB** of scratch space. The service must refuse to start if free space
-  is below the configured minimum.
+- After the 2026-11-24 slim change, a Core snapshot restores to approximately
+  **733 MiB** (22,210 entries, including 13,972 Romm symlinks). Before the slim
+  change it was 17.86 GiB; old snapshots keep that size until retention/prune.
+- HeavyData (Nextcloud user files, Minecraft and AppFlowy) is approximately
+  **9.4 GiB** per snapshot.
+- `/srv` has **948 GB free**.
+- A monthly drill restores sequentially and needs roughly **40 GiB** of scratch
+  space; the service refuses to start below the configured minimum.
 
 ## 4. Coverage matrix
 
 | Data | Source path | Covered by | Notes |
 | --- | --- | --- | --- |
-| Docker named volumes | `/var/lib/docker/volumes` | Core | Excludes listed in §4.1 |
-| Infrastructure and app config trees | `/opt` (except `/opt/stacks`) | Core | Includes `/opt/core`, `/opt/compose`, `/opt/redalchemy`, `/opt/minecraft_servers` |
+| Docker named volumes | `/var/lib/docker/volumes` | Core | Small state volumes only; exclusions in §4.1 |
+| Infrastructure and app config trees | `/opt` (except `/opt/stacks`) | Core | Config and tiny state; bulk paths listed below are excluded |
 | Homelab Git working tree | `/home/deployer/homelab` | Core | Includes gitignored local files such as Prometheus target files. The `.git` directory is excluded; GitHub is the history source. |
 | SQLite/DB dumps and helper scripts | `/data/dbdumps`, `/data/scripts` | Core | Generated inside the Backrest volume |
 | Nextcloud user files | `/srv/nextcloud_data` | HeavyData (cloud only) | Intentionally absent from the local repo |
+| Nextcloud database | `/opt/compose/nextcloud/db_data` | Core dump (`nextcloud-postgres.dump`) | Volume excluded; logical dump restored |
+| Nextcloud code | `/opt/compose/nextcloud/app_config` | Excluded (code) | Keep `config/`, `custom_apps/`, `themes/`; the image provides the rest |
+| Minecraft servers | `/opt/minecraft_servers` | HeavyData (cloud only) | Worlds, mods and server config |
+| Romm library covers | `/opt/compose/romm/library/*/covers` | Excluded | Generated cover art; reindexable |
+| Romm resources | `/opt/compose/romm/resources` | Excluded | Romm-generated covers/metadata; reindexable |
+| Romm symlinks and gamelist | `/opt/compose/romm/library` (except covers) | Core | Tiny mapping to `/mnt/media/Juegos/Retro`; actual ROMs are not backed up |
+| Romm database | `/opt/compose/romm/database` | Core dump (`romm-mariadb.sql.gz`) | Volume excluded |
+| AppFlowy MinIO files | `appflowy_minio_data` | HeavyData (cloud only) | User files, not configuration |
+| AdGuard query log | `adguard_work` | Excluded | Runtime logs; configuration remains in `adguard_conf` |
 | Home configuration and SSH keys | `/home/deployer` selected paths | Core (`/data/home-config`) | See §5.3 |
 | Stack `.env` files rendered by Komodo | `/opt/stacks/**/.env` | Komodo MongoDB dump + `/data/stack-envs` | `/opt/stacks` is excluded from Restic; the hook stages a copy |
 | Komodo database / stack definitions | `komodo_mongo_data` | `komodo-mongo.archive.gz` | Volume excluded, logical dump included |
@@ -121,7 +139,12 @@ inside a snapshot is therefore six hours.
 | TLS certificates | `npm_letsencrypt` | Core | Plus NPM database dump |
 | DNS, Cloudflare, VPN identity | External / secrets | Recovery kit + runbook | Not fully reproducible from backup alone |
 | Host OS configuration (`/etc`, systemd units) | Host | Core (`/data/host-config`) | Selective whitelist; machine identity and host keys excluded |
-| Media, ROMs, torrents, Jellyfin metadata | `/srv/media`, `/srv/roms`, `/srv/torrents`, `/srv/appdata` | Intentionally excluded | Replaceable or re-creatable |
+| Media, ROM data, torrents, Jellyfin metadata | `/srv/media`, `/mnt/media`, `/srv/torrents`, `/srv/appdata` | Intentionally excluded | Replaceable or re-creatable; Romm reindexes from `/mnt/media` |
+
+Romm reindex tooling is preserved in `/opt/compose/romm/tools` (inside the Core
+backup). The active library symlinks point to `/mnt/media/Juegos/Retro`; cover
+art and `resources` are regenerable. The old `/srv/roms` staging tree was
+removed as an obsolete deployment artifact.
 
 ### 4.1 Current plan exclusions
 
@@ -140,12 +163,25 @@ The Core plan deliberately excludes:
 /backup/docker_volumes/nextcloud-backup_restic_cache
 /backup/opt/compose/nextcloud/db_data
 /backup/opt/compose/romm/database
+/backup/opt/compose/romm/library/*/covers
+/backup/opt/compose/romm/resources
+/backup/opt/minecraft_servers
+/backup/opt/compose/nextcloud/app_config/apps
+/backup/opt/compose/nextcloud/app_config/core
+/backup/opt/compose/nextcloud/app_config/dist
+/backup/opt/compose/nextcloud/app_config/3rdparty
+/backup/opt/compose/nextcloud/app_config/lib
+/backup/opt/compose/nextcloud/app_config/resources
+/backup/docker_volumes/appflowy_minio_data
+/backup/docker_volumes/adguard_work
 /backup/opt/romm
 /backup/opt/stacks
 ```
 
 Database volumes are excluded because their logical dumps are included instead.
-Metrics, logs and caches are excluded because they are regenerable.
+Metrics, logs, caches and generated cover art are excluded because they are
+regenerable. Nextcloud bundled code is excluded because the container image
+provides it; `config/`, `custom_apps/` and `themes/` remain in Core.
 
 ## 5. Configuration and secret coverage
 
@@ -312,7 +348,7 @@ repository on `/srv`; it needs roughly 40 GiB free.
 | `BACKREST_VERIFY_RETRY_HOURS` | `24` | Delay between retries |
 | `BACKREST_VERIFY_KEEP_REPORTS` | `12` | Reports retained |
 | `BACKREST_VERIFY_CORE_PATHS` | Core paths | Coverage assertions |
-| `BACKREST_VERIFY_HEAVY_PATHS` | `/backup/srv/nextcloud_data` | HeavyData coverage |
+| `BACKREST_VERIFY_HEAVY_PATHS` | `/backup/srv/nextcloud_data`, `/backup/opt/minecraft_servers`, `/backup/docker_volumes/appflowy_minio_data` | HeavyData coverage |
 | `BACKREST_VERIFY_PORT` | `9798` | `/status` and `/metrics` port |
 | `BACKREST_URL` | `http://backrest:9898` | Backrest API for active-operation checks |
 | `BACKREST_EXPORTER_USER` | `prometheus` | API user, same as the exporter |
@@ -646,25 +682,34 @@ docker run --rm --network monitoring \
   backrest-verify:local --run-now --repos local-repo-srv --skip-heavy --no-restore
 ```
 
-A full local restore is I/O-bound by the portable HDD and may take hours. The
-scratch path on the SSD reduces write and verification time but not source
-reads.
+HeavyData restores are I/O-bound by the portable HDD. The Core snapshot is now
+small (~733 MiB); the drill time is dominated by the ~9.4 GiB HeavyData restore.
+Scratch on the SSD reduces write and verification time but not source reads.
 
-Validation performed on 2026-11-23:
+Validation performed:
 
-- A `--no-restore` run passed all preflight, repository-check and snapshot
-  coverage checks.
-- A selective restore of every critical path passed **29 checks with 0
-  failures**: 12 stack `.env` files, 69 manifest entries, 8 SQLite databases,
-  `pg_restore --list`, 33 Compose files, 24 TLS certificates, Vaultwarden keys,
-  `git-head.txt` (`dca5c9e`) and the full configuration/secret set.
-- A full restore against `/srv` wrote about 14 GiB but was stopped because the
-  portable USB HDD is the bottleneck (roughly 1–3 MB/s for this workload). The
-  default scratch path was moved to `/var/tmp` on the SSD; the source repository
-  read is still HDD-bound.
+- **2026-11-24 05:30**, before the slim change: a full drill passed **54 checks
+  with 0 failures** in 38m28s, restoring 38.6 GiB (local Core, remote Core and
+  remote HeavyData).
+- **2026-11-24, slim change**: a manual Core backup produced snapshot `ccbe0a4f`
+  with **733 MiB** (22,210 entries, including 13,972 Romm symlinks). The
+  excluded Romm covers/resources, Minecraft, Nextcloud code, AppFlowy MinIO and
+  AdGuard work were absent; Nextcloud `config.php`, `custom_apps`, Romm
+  `gamelist.xml` and the reindex tools were present.
+- A manual HeavyData backup produced snapshot `0f81c337` with **9.39 GiB**
+  (14,648 entries) and all three expected paths: Nextcloud data, Minecraft and
+  AppFlowy MinIO.
+- A `--no-restore` coverage run against the new snapshots passed **10 checks with
+  0 failures**.
+- A **post-slim full drill** on 2026-11-24 at 20:58 passed **56 checks with 0
+  failures** in 35m10s. It restored the slim local Core (`ccbe0a4f`, 0.72 GiB),
+  the still-pre-slim remote Core (`4466f527`, 17.86 GiB) and the new HeavyData
+  (`0f81c337`, 9.39 GiB: Nextcloud 2.90 GiB, Minecraft 5.78 GiB, AppFlowy
+  729 MiB). The next scheduled cloud Core runs at 02:30/03:00 will make the
+  remote Core slim as well; the December drill will then restore about 10.9 GiB
+  in total.
 - The service is running, the Prometheus target is `up`, and the next scheduled
-  drill is **2026-12-16 04:00 CET**. The first full monthly run is the definitive
-  end-to-end full-size test.
+  drill is **2026-12-16 04:00 CET**.
 
 ### 11.3 Phase 3 details (implemented)
 
@@ -736,7 +781,7 @@ Validation on 2026-11-23:
 - Media, ROMs, torrents and Jellyfin metadata are intentionally excluded.
 - The monthly validation checks dump structure, not a live import. Live imports
   are part of the quarterly drill.
-- Full Core restores are I/O-bound by the local repository on the portable USB
-  HDD (roughly 1–3 MB/s for this workload). Scratch on the SSD helps writes and
-  verification, but not source reads. Expect the monthly full drill to take
-  hours; the 6-hour command timeout is intentional.
+- HeavyData restores are I/O-bound by the local repository on the portable USB
+  HDD. The Core snapshot is now ~733 MiB; the drill is dominated by the ~9.4 GiB
+  HeavyData restore. Scratch on the SSD helps writes and verification, but not
+  source reads. The 6-hour command timeout is intentional.
